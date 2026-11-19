@@ -2,7 +2,7 @@ import { supabase } from './community.js';
 import './friends.css';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 const uid=(r,me)=>r.sender===me?r.receiver:r.sender;
-const flag=code=>{const c=String(code||'').trim().toUpperCase();return /^[A-Z]{2}$/.test(c)?String.fromCodePoint(...[...c].map(x=>127397+x.charCodeAt(0))):'🌐';};
+const flag=code=>{const c=String(code||'').trim().toLowerCase();return /^[a-z]{2}$/.test(c)?'<img class="sf-country-flag" src="https://flagcdn.com/w80/'+c+'.png" alt="Country flag" loading="lazy">':'🌐';};
 export function installFriends(){
  const button=document.createElement('button');button.type='button';button.className='sf-friends-trigger';button.setAttribute('aria-label','Open friends');button.innerHTML='<span class="sf-friends-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 11a3 3 0 1 0-1-5M17 15a5 5 0 0 1 4 5"/></svg></span><b class="sf-friends-alert" hidden>!</b>';document.body.append(button);
  const layer=document.createElement('div');layer.className='sf-friends-layer';layer.hidden=true;
@@ -12,7 +12,7 @@ export function installFriends(){
  const toast=document.createElement('div');toast.className='sf-social-toast';toast.hidden=true;toast.setAttribute('role','status');document.body.append(toast);
  const notificationSound=new Audio(import.meta.env.BASE_URL+'audio/Notification.mp3');notificationSound.volume=.65;
  let notificationTimer=null,toastTimer=null,knownIncoming=null,channel=null,profileOpen=false,toastQueue=[],toastBusy=false,activeToast=null;
- let presenceChannel=null,presenceUser=null,liveOnline=new Set(),presenceReady=false;const inviteCooldown=new Map();const INVITE_COOLDOWN_MS=10000;let lastSyncedUser=null,lastSyncedName=null;let opened=false,tab='friends',me=null,requests=[],blocks=[],invites=[],profiles=new Map(),timer=null,busy=false,previousFocus=null;
+ let presenceChannel=null,presenceUser=null,liveOnline=new Set(),presenceReady=false,presenceRetry=null,presenceGeneration=0;const inviteCooldown=new Map();const INVITE_COOLDOWN_MS=10000;let lastSyncedUser=null,lastSyncedName=null;let opened=false,tab='friends',me=null,requests=[],blocks=[],invites=[],profiles=new Map(),timer=null,busy=false,previousFocus=null;
  const hideToast=()=>{clearTimeout(toastTimer);toast.classList.remove('visible');setTimeout(()=>{if(!toast.classList.contains('visible')){toast.hidden=true;toastBusy=false;activeToast=null;showNextToast();}},220);};
  const showNextToast=()=>{if(toastBusy||!toastQueue.length)return;toastBusy=true;activeToast=toastQueue.shift();const n=activeToast;const senderName=getName(n.sender);const isParty=n.type==='party';
  toast.innerHTML='<div class="sf-social-toast-head"><span class="sf-social-toast-symbol">'+(isParty?'♛':'♧')+'</span><div class="sf-social-toast-copy"><small>SKYFRONT • '+(isParty?'PARTY INVITE':'FRIEND REQUEST')+'</small><strong>'+esc(senderName)+'</strong><span>'+(isParty?'invited you to their party':'wants to add you as a friend')+'</span></div><button type="button" data-toast-dismiss aria-label="Dismiss notification">×</button></div><div class="sf-social-toast-actions"><button type="button" data-toast-accept>ACCEPT</button><button type="button" data-toast-decline>DECLINE</button></div><div class="sf-social-toast-progress"></div>';
@@ -27,18 +27,33 @@ export function installFriends(){
  const closeProfile=()=>{profileOpen=false;profilePopup.hidden=true;};
  profilePopup.querySelector('[data-profile-close]').onclick=closeProfile;
  profilePopup.querySelector('.sf-friend-profile-shade').onclick=closeProfile;
- const isOnline=id=>presenceReady?liveOnline.has(id):Boolean(profiles.get(id)?.is_online);
+ const isOnline=id=>liveOnline.has(id)||( !presenceReady&&Boolean(profiles.get(id)?.is_online));
  const openProfile=id=>{const p=profiles.get(id);if(!p)return;profileOpen=true;profilePopup.hidden=false;const online=isOnline(id);profilePopup.querySelector('.sf-friend-profile-content').innerHTML='<div class="sf-friend-profile-avatar">'+esc(p.username.slice(0,1).toUpperCase())+'</div><h3>'+esc(p.username)+'</h3><p><i class="sf-presence-dot '+(online?'online':'offline')+'"></i>'+(online?'ONLINE':'OFFLINE')+'</p><div class="sf-friend-profile-details"><span>LEVEL <b>'+esc(p.player_level)+'</b></span><span>COUNTRY <b class="sf-profile-flag" title="'+esc(p.country_code||'')+'">'+flag(p.country_code)+'</b></span></div>';};
  const refreshPresenceUI=()=>{if(opened){render();if(profileOpen&&profilePopup.dataset.user)openProfile(profilePopup.dataset.user);}};
  const updatePresence=()=>{if(!presenceChannel)return;const states=presenceChannel.presenceState();liveOnline=new Set(Object.values(states).flat().filter(v=>v?.user_id&&v.active).map(v=>v.user_id));presenceReady=true;refreshPresenceUI();};
- const trackPresence=async()=>{if(!presenceChannel||!me)return;try{if(document.visibilityState==='visible'&&document.hasFocus())await presenceChannel.track({user_id:me,active:true});else await presenceChannel.untrack();}catch(e){console.warn('SKYFRONT presence:',e);}};
- const connectPresence=id=>{if(presenceChannel){void supabase.removeChannel(presenceChannel);presenceChannel=null;}liveOnline.clear();presenceReady=false;presenceUser=id;if(!id)return;
- presenceChannel=supabase.channel('skyfront-online-presence',{config:{presence:{key:id}}}).on('presence',{event:'sync'},updatePresence).on('presence',{event:'join'},updatePresence).on('presence',{event:'leave'},updatePresence).subscribe(status=>{if(status==='SUBSCRIBED'){updatePresence();void trackPresence();}});};
+ const trackPresence=async()=>{if(!presenceChannel||!me||presenceUser!==me)return;try{if(document.visibilityState==='visible')await presenceChannel.track({user_id:me,active:true});else await presenceChannel.untrack();}catch(e){console.warn('SKYFRONT presence:',e);}};
+ const connectPresence=id=>{
+   clearTimeout(presenceRetry);presenceGeneration++;const generation=presenceGeneration;
+   if(presenceChannel){void supabase.removeChannel(presenceChannel);presenceChannel=null;}
+   liveOnline.clear();presenceReady=false;presenceUser=id;refreshPresenceUI();if(!id)return;
+   const ch=supabase.channel('skyfront-online-presence',{config:{presence:{key:id}}});presenceChannel=ch;
+   ch.on('presence',{event:'sync'},()=>{if(generation===presenceGeneration)updatePresence();})
+     .on('presence',{event:'join'},()=>{if(generation===presenceGeneration)updatePresence();})
+     .on('presence',{event:'leave'},()=>{if(generation===presenceGeneration)updatePresence();})
+     .subscribe(status=>{
+       if(generation!==presenceGeneration)return;
+       if(status==='SUBSCRIBED'){updatePresence();void trackPresence();}
+       else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+         presenceReady=false;refreshPresenceUI();
+         clearTimeout(presenceRetry);presenceRetry=setTimeout(()=>{if(generation===presenceGeneration&&me===id)connectPresence(id);},2500);
+       }
+     });
+ };
  const notice=(msg,error=false)=>{feedback.textContent=msg;feedback.classList.toggle('error',error)};
  const rpc=async(action,target)=>{const {error}=await supabase.rpc('sf_social_action',{action,target});if(error)throw error;};
  const blockRpc=async(target,should_block)=>{const {error}=await supabase.rpc('sf_social_block',{target,should_block});if(error)throw error;};
  const getName=id=>profiles.get(id)?.username||'Player';
- const heartbeat=async()=>{if(!me||document.visibilityState!=='visible'||!document.hasFocus())return;const country=localStorage.getItem('sf-career-flag:'+me)||'NL';await supabase.rpc('sf_social_presence',{p_country:country,p_level:1});};
+ const heartbeat=async()=>{if(!me||document.visibilityState!=='visible')return;const country=localStorage.getItem('sf-career-flag:'+me)||'NL';await supabase.rpc('sf_social_presence',{p_country:country,p_level:1});};
  const subscribe=userId=>{if(channel){supabase.removeChannel(channel);channel=null;}if(!userId)return;channel=supabase.channel('skyfront-social-'+userId).on('postgres_changes',{event:'*',schema:'public',table:'sf_friend_requests',filter:'receiver=eq.'+userId},()=>void load()).on('postgres_changes',{event:'*',schema:'public',table:'sf_party_invites',filter:'receiver=eq.'+userId},()=>void load()).subscribe();};
  async function load(){
    const {data:{user}}=await supabase.auth.getUser();me=user?.id||null;
@@ -112,5 +127,5 @@ export function installFriends(){
  const pageObserver=new MutationObserver(()=>{if(button.hidden&&opened)close();});
  pageObserver.observe(document.querySelector('#stage')||document.body,{attributes:true,childList:true,subtree:false});
  supabase.auth.onAuthStateChange(()=>setTimeout(refresh,0));
- return ()=>{clearInterval(timer);clearInterval(notificationTimer);clearTimeout(toastTimer);if(channel)supabase.removeChannel(channel);if(presenceChannel)supabase.removeChannel(presenceChannel);document.removeEventListener('visibilitychange',visibilityHandler);window.removeEventListener('focus',visibilityHandler);window.removeEventListener('blur',visibilityHandler);pageObserver.disconnect();button.remove();layer.remove();toast.remove()};
+ return ()=>{clearInterval(timer);clearInterval(notificationTimer);clearTimeout(toastTimer);if(channel)supabase.removeChannel(channel);if(presenceChannel)supabase.removeChannel(presenceChannel);clearTimeout(presenceRetry);document.removeEventListener('visibilitychange',visibilityHandler);window.removeEventListener('focus',visibilityHandler);window.removeEventListener('blur',visibilityHandler);pageObserver.disconnect();button.remove();layer.remove();toast.remove()};
 }
