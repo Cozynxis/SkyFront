@@ -39,7 +39,8 @@ export function mountCareer(){
  if(!FLAGS.some(f=>f[0]===flag))flag='NL';
  let modal=false,search='';
  const logo=import.meta.env.BASE_URL+'images/skyfront-logo.png';
- const name=localStorage.getItem('sf-player-name')||'PLAYER ONE';
+ const name=()=>localStorage.getItem('sf-player-name')||'PLAYER ONE';
+ const flagImg=code=>`<img class="career-flag-image" src="https://flagcdn.com/w80/${code.toLowerCase()==='gb'?'gb':code.toLowerCase()}.png" alt="" loading="lazy">`;
  const flagItem=()=>FLAGS.find(f=>f[0]===flag)||FLAGS[0];
  const stat=(label,value,icon)=>`<div class="career-stat"><div class="career-stat-label"><span>${icon}</span>${label}</div><strong>${value}</strong></div>`;
  const render=()=>{
@@ -51,8 +52,8 @@ export function mountCareer(){
       <aside class="career-profile">
         <div class="career-profile-top"><div class="career-profile-avatar"><img src="${logo}" alt=""></div><span class="career-level">LVL 1</span></div>
         <div class="career-profile-label">PLAYER PROFILE</div>
-        <h2>${escapeHtml(name)}</h2>
-        <button class="career-flag" type="button" data-action="flag" aria-label="Change country flag"><span class="career-flag-emoji">${f[1]}</span><span><strong>${f[2]}</strong><small>PLAYER FLAG</small></span><span class="career-pencil">✎</span></button>
+        <h2>${escapeHtml(name())}</h2>
+        <button class="career-flag" type="button" data-action="flag" aria-label="Change country flag"><span class="career-flag-emoji">${flagImg(f[0])}</span><span><strong>${f[2]}</strong><small>PLAYER FLAG</small></span><span class="career-pencil">✎</span></button>
         <div class="career-profile-divider"></div>
         <div class="career-profile-caption">PROFILE OVERVIEW</div>
         <div class="career-profile-row"><span>Season</span><strong>01</strong></div>
@@ -78,7 +79,7 @@ export function mountCareer(){
         <p class="career-data-note">Statistics use recorded match history only. No simulated wins or kills.</p>
       </div>
     </div>
-    ${modal?`<div class="career-modal-wrap"><button class="career-modal-backdrop" data-action="close" aria-label="Close flag selection"></button><section class="career-modal" role="dialog" aria-modal="true" aria-label="Choose your flag"><div class="career-modal-heading"><div><small>PLAYER CUSTOMIZATION</small><h2>CHOOSE YOUR FLAG</h2></div><button data-action="close" aria-label="Close" class="career-close">×</button></div><input id="career-flag-search" placeholder="Search countries..." value="${escapeHtml(search)}" aria-label="Search countries"><div class="career-flag-grid">${FLAGS.filter(f=>f[2].toLowerCase().includes(search.toLowerCase())||f[0].toLowerCase().includes(search.toLowerCase())).map(f=>`<button class="${flag===f[0]?'chosen':''}" data-flag="${f[0]}" type="button"><span>${f[1]}</span><small>${f[2]}</small></button>`).join('')||'<p>No countries found.</p>'}</div><p>Your selection saves automatically.</p></section></div>`:''}
+    ${modal?`<div class="career-modal-wrap"><button class="career-modal-backdrop" data-action="close" aria-label="Close flag selection"></button><section class="career-modal" role="dialog" aria-modal="true" aria-label="Choose your flag"><div class="career-modal-heading"><div><small>PLAYER CUSTOMIZATION</small><h2>CHOOSE YOUR FLAG</h2></div><button data-action="close" aria-label="Close" class="career-close">×</button></div><input id="career-flag-search" placeholder="Search countries..." value="${escapeHtml(search)}" aria-label="Search countries"><div class="career-flag-grid">${FLAGS.filter(f=>f[2].toLowerCase().includes(search.toLowerCase())||f[0].toLowerCase().includes(search.toLowerCase())).map(f=>`<button class="${flag===f[0]?'chosen':''}" data-flag="${f[0]}" type="button"><span>${flagImg(f[0])}</span><small>${f[2]}</small></button>`).join('')||'<p>No countries found.</p>'}</div><p>Your selection saves automatically.</p></section></div>`:''}
   </section>`;
   root.querySelector('#career-mode').addEventListener('change',e=>{mode=e.target.value;render()});
   root.querySelector('#career-range').addEventListener('change',e=>{range=e.target.value;render()});
@@ -89,8 +90,9 @@ export function mountCareer(){
  };
  const key=e=>{if(e.key==='Escape'&&modal){modal=false;render()}};
  document.addEventListener('keydown',key);
+ const profileUpdate=()=>render();window.addEventListener('skyfront:profile-changed',profileUpdate);
  render();
- return ()=>{document.removeEventListener('keydown',key)};
+ return ()=>{document.removeEventListener('keydown',key);window.removeEventListener('skyfront:profile-changed',profileUpdate)};
 }
 
 // Future gameplay integration: store each completed match as
