@@ -2,6 +2,7 @@ import { mountLocker } from './locker.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
 import { installAudio } from './audio.js';
+import { mountCareer } from './career.js';
 import './style.css';
 
 const pages = [
@@ -32,6 +33,7 @@ let current = 'play';
 let pageEvents=new AbortController();
 let cleanupShop=null;
 let cleanupFrontPass=null;
+let cleanupCareer=null;
 const app = document.querySelector('#app');
 app.innerHTML = `
   <div class="background" aria-hidden="true"><div class="light light-a"></div><div class="light light-b"></div><div class="horizon"></div><div class="grid-floor"></div></div>
@@ -69,6 +71,7 @@ function setPage(id){
  pageEvents.abort();pageEvents=new AbortController();
  if(cleanupShop){cleanupShop();cleanupShop=null;}
  if(cleanupFrontPass){cleanupFrontPass();cleanupFrontPass=null;}
+ if(cleanupCareer){cleanupCareer();cleanupCareer=null;}
  const p=pages.find(x=>x.id===id)||pages[0];current=p.id;
  document.body.classList.toggle('locker-page',p.id==='locker');
  document.body.classList.toggle('shop-page',p.id==='shop');
@@ -79,12 +82,13 @@ function setPage(id){
  root.style.setProperty('--dock',p.bar);
  dock.querySelectorAll('button').forEach(btn=>{const active=btn.dataset.page===id;btn.classList.toggle('active',active);btn.setAttribute('aria-current',active?'page':'false')});
  stage.classList.remove('page-in');void stage.offsetWidth;stage.classList.add('page-in');
- stage.innerHTML=id==='play'?playMarkup():id==='locker'?'<div id="locker-root" style="width:100%"></div>':id==='shop'?'<div id="shop-root" style="width:100%"></div>':id==='battlepass'?'<div id="frontpass-root" style="width:100%"></div>':soonMarkup(p);
+ stage.innerHTML=id==='play'?playMarkup():id==='locker'?'<div id="locker-root" style="width:100%"></div>':id==='shop'?'<div id="shop-root" style="width:100%"></div>':id==='battlepass'?'<div id="frontpass-root" style="width:100%"></div>':id==='career'?'<div id="career-root" style="width:100%"></div>':soonMarkup(p);
  stage.querySelector('#back-home')?.addEventListener('click',()=>setPage('play'));
  if(id==='play') initModeSelector();
  if(id==='locker') mountLocker();
  if(id==='shop') cleanupShop=mountShop();
  if(id==='battlepass') cleanupFrontPass=mountFrontPass();
+ if(id==='career') cleanupCareer=mountCareer();
  document.title='SKYFRONT — '+p.label;
 }
 installAudio();
