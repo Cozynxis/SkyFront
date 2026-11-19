@@ -55,3 +55,17 @@
 .sf-party-layer .sf-party-detail[hidden]{display:none!important}
 .sf-party-layer .sf-party-detail button{pointer-events:auto}
 @media(max-width:760px){.sf-party-layer .sf-party-detail{left:auto;right:12px;top:125px;width:min(310px,calc(100vw - 24px));max-height:calc(100dvh - 155px)}}
+
+
+/* V6: leader-only member selection and expanded management card */
+.sf-party-member:disabled{pointer-events:none;cursor:default;opacity:1}
+.sf-party-member:disabled .sf-party-chevron{display:none}
+.sf-party-detail-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin:14px 0 3px}
+.sf-party-detail-stats>div{display:flex;flex-direction:column;gap:5px;padding:12px;border-radius:10px;background:#ffffff12;border:1px solid #ffffff20;text-align:left}
+.sf-party-detail-stats span{font-size:9px;letter-spacing:.12em;color:#a7c5ed}
+.sf-party-detail-stats b{font-size:13px}
+.sf-party-status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#8696b1;vertical-align:middle;margin-right:4px}
+.sf-party-status-dot.online{background:#45f1a2;box-shadow:0 0 9px #45f1a288}
+.sf-party-detail-actions p{margin:7px 0 0;text-align:left;font-size:10px;letter-spacing:.12em;color:#b2cdfa;font-weight:900}
+.sf-party-detail-actions button{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:10px}
+.sf-party-detail-actions button span{font-size:18px;opacity:.75}
