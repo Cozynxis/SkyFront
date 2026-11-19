@@ -16,7 +16,7 @@ const sounds = Object.fromEntries(Object.entries(sources).map(([key, filename]) 
 let musicStarted = false;
 let lastHover = 0;
 function startMusic(){
-  if(musicStarted) return;
+  if(musicStarted || cinematicPauseCount>0) return;
   sounds.music.play().then(()=>{musicStarted=true;}).catch(()=>{});
 }
 function effect(key){
@@ -42,4 +42,15 @@ export function installAudio(){
     if(!button || button.disabled) return;
     effect(button.id==='start-play'?'play':'click');
   });
+}
+
+// Cinematic audio ducking: preserve playback position while a reveal runs.
+let cinematicPauseCount=0;
+export function pauseMusicForCinematic(){
+ cinematicPauseCount++;
+ if(cinematicPauseCount===1)sounds.music.pause();
+}
+export function resumeMusicAfterCinematic(){
+ cinematicPauseCount=Math.max(0,cinematicPauseCount-1);
+ if(cinematicPauseCount===0&&musicStarted)sounds.music.play().catch(()=>{});
 }
