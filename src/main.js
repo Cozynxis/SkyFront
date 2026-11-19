@@ -233,7 +233,7 @@ document.addEventListener('sf:party-notice',event=>{
  const name=toast.querySelector('.sf-party-notice-name');
  toast.replaceChildren();
  const label=document.createElement('small');label.textContent='SKYFRONT • PARTY';
- const heading=document.createElement('strong');heading.textContent=username||'Player';
+ const heading=document.createElement('strong');heading.textContent=kind==='kicked-self'?'YOU':username||'Player';
  const info=document.createElement('span');info.textContent=message;
  toast.append(label,heading,info);
  clearTimeout(partyNoticeTimer);
