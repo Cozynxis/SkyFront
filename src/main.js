@@ -7,6 +7,7 @@ import { mountCommunity } from './community.js';
 import { installAuthGate } from './auth.js';
 import { installAccountMenu } from './account-menu.js';
 import { installFriends } from './friends.js';
+import { installParty } from './party.js';
 import { supabase } from './community.js';
 import './style.css';
 
@@ -55,6 +56,7 @@ app.innerHTML = `
 installAuthGate();
 installAccountMenu();
 installFriends();
+installParty();
 const stage=app.querySelector('#stage');
 const dock=app.querySelector('.dock');
 const shopTopNav=app.querySelector('#shop-top-nav');
