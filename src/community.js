@@ -10,6 +10,7 @@ export function mountCommunity(){
  if(!root)return ()=>{};
  let destroyed=false, user=null, isAdmin=false, section='news', editing=null;
  let articles=[],polls=[],options=[],votes=[],counts={};
+ let archiveOpen=false,adminTab='news';
  let channel=null,refreshTimer=null;
  const safeImage=url=> /^https:\/\//i.test(url||'') ? url : '';
  root.innerHTML=`<div class="cm-wrap"><div class="cm-hero"><div><span class="cm-kicker">SKYFRONT / COMMUNITY</span><h1>THE COMMUNITY</h1><p>Updates, announcements and your vote on what's next.</p></div><div class="cm-actions"><button class="cm-admin" hidden type="button">ADMIN STUDIO</button><button class="cm-account" type="button">SIGN IN</button></div></div><div class="cm-tabs"><button data-tab="news" class="active">NEWS & ANNOUNCEMENTS</button><button data-tab="polls">COMMUNITY POLLS</button></div><div class="cm-status" role="status" hidden></div><div class="cm-content"></div></div><div class="cm-modal-host"></div>`;
@@ -43,20 +44,38 @@ export function mountCommunity(){
  }
  function render(){
   if(section==='news')content.innerHTML=`<div class="cm-section-title"><h2>LATEST NEWS</h2><span>${articles.length} POSTS</span></div><div class="cm-news-grid">${articles.length?articles.map(a=>`<button class="cm-news-card" data-article="${a.id}"><div class="cm-news-art">${safeImage(a.image_url)?`<img src="${escapeHTML(a.image_url)}" alt="" loading="lazy">`:'<span class="cm-art-logo">S</span>'}</div><div class="cm-news-body"><span class="cm-category">${escapeHTML(a.category)} ${a.pinned?'✦ PINNED':''}</span><h3>${escapeHTML(a.title)}</h3><p>${escapeHTML(a.body.slice(0,150))}${a.body.length>150?'…':''}</p><small>${dateLabel(a.created_at)}</small></div></button>`).join(''):'<div class="cm-empty">No announcements yet. Check back soon.</div>'}</div>`;
-  else if(section==='polls')content.innerHTML=`<div class="cm-section-title"><h2>HAVE YOUR SAY</h2><span>${polls.length} POLLS</span></div><div class="cm-polls-grid">${polls.length?polls.map(p=>{
-   const opts=options.filter(o=>o.poll_id===p.id),selected=votes.find(v=>v.poll_id===p.id&&v.user_id===user?.id),total=opts.reduce((s,o)=>s+(counts[o.id]||0),0),open=p.active&&(!p.closes_at||new Date(p.closes_at)>new Date());
-   return `<article class="cm-poll"><div class="cm-poll-top"><span>${open?'● LIVE POLL':'CLOSED'}</span><small>${dateLabel(p.created_at)}</small></div><h3>${escapeHTML(p.question)}</h3><div class="cm-choices">${opts.map(o=>`<button data-vote="${o.id}" data-poll="${p.id}" ${(!open||!!selected)?'disabled':''} class="${selected?.option_id===o.id?'chosen':''}"><span>${escapeHTML(o.label)}</span>${selected||!open?`<b>${total?Math.round((counts[o.id]||0)/total*100):0}%</b><i style="width:${total?Math.round((counts[o.id]||0)/total*100):0}%"></i>`:''}</button>`).join('')}</div><p>${total} votes · ${selected?'Your vote is recorded':open?'Choose an answer to vote':'Voting ended'}</p></article>`;
-  }).join(''):'<div class="cm-empty">No polls yet. Stay tuned.</div>'}</div>`;
+  else if(section==='polls'){
+   const now=Date.now(),isOpen=p=>p.active&&(!p.closes_at||Date.parse(p.closes_at)>now);
+   const category=p=>{
+    if(p.placement&&p.placement!=='auto')return p.placement;
+    if(isOpen(p))return 'active';
+    const ended=Date.parse(p.ended_at||(p.closes_at&&Date.parse(p.closes_at)<=now?p.closes_at:p.created_at));
+    return now-ended<86400000?'recent':'archive';
+   };
+   const card=p=>{
+    const opts=options.filter(o=>o.poll_id===p.id),selected=votes.find(v=>v.poll_id===p.id&&v.user_id===user?.id),total=opts.reduce((n,o)=>n+(counts[o.id]||0),0),open=isOpen(p);
+    return `<article class="cm-poll ${open?'':'cm-poll-ended'}"><div class="cm-poll-top"><span>${open?'● LIVE POLL':'✓ ENDED'}</span><small>${dateLabel(p.created_at)}</small></div><h3>${escapeHTML(p.question)}</h3><div class="cm-choices">${opts.map(o=>{const pct=total?Math.round((counts[o.id]||0)/total*100):0;return `<button data-vote="${o.id}" data-poll="${p.id}" ${!open?'disabled':''} class="${selected?.option_id===o.id?'chosen':''}"><span>${escapeHTML(o.label)}</span>${selected||!open?`<b>${pct}%</b><i style="width:${pct}%"></i>`:''}</button>`}).join('')}</div><p>${total} votes · ${!open?'Final results':selected?'Vote saved · select another answer to change':'Choose an answer to vote'}</p></article>`;
+   };
+   const recent=polls.filter(p=>category(p)==='recent'),active=polls.filter(p=>category(p)==='active'),archive=polls.filter(p=>category(p)==='archive');
+   content.innerHTML=`<div class="cm-section-title"><h2>COMMUNITY POLLS</h2><span>${active.length} ACTIVE</span></div>
+   ${recent.length?`<section class="cm-poll-group cm-recent"><div class="cm-group-heading"><h3>✦ JUST ENDED</h3><p>Recently finished polls</p></div><div class="cm-polls-grid">${recent.map(card).join('')}</div></section>`:''}
+   <section class="cm-poll-group"><div class="cm-group-heading"><h3>● ACTIVE POLLS</h3><p>Make your choice · change your vote anytime before a poll ends</p></div><div class="cm-polls-grid">${active.length?active.map(card).join(''):'<div class="cm-empty">No active polls right now.</div>'}</div></section>
+   <section class="cm-archive"><button type="button" class="cm-archive-toggle" data-archive-toggle aria-expanded="${archiveOpen}"><span>ENDED POLLS <small>${archive.length} in archive</small></span><span>${archiveOpen?'−':'+'}</span></button>${archiveOpen?`<div class="cm-polls-grid cm-archive-grid">${archive.length?archive.map(card).join(''):'<div class="cm-empty">No archived polls yet.</div>'}</div>`:''}</section>`;
+  }
   query('.cm-tabs [data-tab="news"]').classList.toggle('active',section==='news');
   query('.cm-tabs [data-tab="polls"]').classList.toggle('active',section==='polls');
  }
  query('.cm-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b){section=b.dataset.tab;render()}});
  content.addEventListener('click',async e=>{
   const a=e.target.closest('[data-article]');if(a){const post=articles.find(x=>x.id===a.dataset.article);if(!post)return;modal(`<span class="cm-kicker">${escapeHTML(post.category)} / ${dateLabel(post.created_at)}</span><h2>${escapeHTML(post.title)}</h2>${safeImage(post.image_url)?`<img class="cm-modal-image" src="${escapeHTML(post.image_url)}" alt="">`:''}<p class="cm-article-text">${escapeHTML(post.body)}</p>`);return;}
+  if(e.target.closest('[data-archive-toggle]')){archiveOpen=!archiveOpen;render();return;}
   const b=e.target.closest('[data-vote]');if(!b)return;
   if(!user){showAuth();return;}
-  const {error}=await supabase.from('sf_poll_votes').insert({poll_id:b.dataset.poll,option_id:b.dataset.vote,user_id:user.id});
-  if(error)notify(root,error.message);else await load();
+  const existing=votes.find(v=>v.poll_id===b.dataset.poll&&v.user_id===user.id);
+  if(existing?.option_id===b.dataset.vote)return;
+  b.disabled=true;
+  const {error}=existing?await supabase.from('sf_poll_votes').update({option_id:b.dataset.vote}).eq('poll_id',b.dataset.poll).eq('user_id',user.id):await supabase.from('sf_poll_votes').insert({poll_id:b.dataset.poll,option_id:b.dataset.vote,user_id:user.id});
+  if(error){b.disabled=false;notify(root,error.message)}else await load();
  });
  function showAuth(){
   modal(`<span class="cm-kicker">SKYFRONT ACCOUNT</span><h2>WELCOME BACK</h2><p>Sign in to vote. New here? Create an account with your email.</p><form class="cm-auth-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Password<input name="password" type="password" autocomplete="current-password" minlength="6" required></label><div class="cm-form-actions"><button type="submit" data-action="signin">SIGN IN</button><button type="button" data-action="signup">REGISTER</button></div><p class="cm-form-message" role="status"></p></form>`);
@@ -76,6 +95,7 @@ export function mountCommunity(){
  query('.cm-admin').onclick=()=>showAdmin();
  function showAdmin(){
   if(!isAdmin)return;
+  editing=null;
   modal(`<span class="cm-kicker">SKYFRONT / ADMIN STUDIO</span><h2>COMMUNITY CONTROL</h2><div class="cm-admin-tabs"><button data-admin="news">ANNOUNCEMENTS</button><button data-admin="polls">POLLS</button></div><div class="cm-admin-area"></div>`);
   const area=modalHost.querySelector('.cm-admin-area');
   function adminSection(type){
@@ -92,12 +112,13 @@ export function mountCommunity(){
     area.querySelectorAll('[data-delete-poll]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this poll and its votes?'))return;const r=await supabase.from('sf_polls').delete().eq('id',b.dataset.deletePoll);if(r.error)alert(r.error.message);else{await load();adminSection('polls')}});
    }
   }
-  modalHost.querySelectorAll('[data-admin]').forEach(b=>b.onclick=()=>{editing=null;adminSection(b.dataset.admin)});
-  adminSection('news');
+  modalHost.querySelectorAll('[data-admin]').forEach(b=>b.onclick=()=>{editing=null;adminTab=b.dataset.admin;adminSection(adminTab)});
+  adminSection(adminTab);
  }
+ const lifecycleTimer=setInterval(()=>{if(!destroyed&&section==='polls')render()},60000);
  const refresh=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!destroyed)load()},350)};
  channel=supabase.channel('skyfront-community-live').on('postgres_changes',{event:'*',schema:'public',table:'sf_announcements'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_polls'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_poll_options'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_poll_votes'},refresh).subscribe();
  const authListener=supabase.auth.onAuthStateChange(()=>{if(!destroyed)setTimeout(async()=>{if(!destroyed){await checkAccount();await load()}},0)});
  checkAccount().then(load);
- return ()=>{destroyed=true;clearTimeout(refreshTimer);supabase.removeChannel(channel);authListener.data.subscription.unsubscribe();modalHost.replaceChildren()};
+ return ()=>{destroyed=true;clearInterval(lifecycleTimer);clearTimeout(refreshTimer);supabase.removeChannel(channel);authListener.data.subscription.unsubscribe();modalHost.replaceChildren()};
 }
