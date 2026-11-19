@@ -95,3 +95,14 @@ button.mode-tile:hover{transform:translateY(-3px);filter:brightness(1.13)}
 .brand>span{display:flex;align-items:baseline;gap:9px;white-space:nowrap}
 .brand .alpha-version{display:inline;margin:0;font-family:Inter,Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:.025em;color:#c7d4f7;text-transform:none}
 @media(max-width:650px){.brand>span{gap:5px}.brand .alpha-version{font-size:8px}}
+
+/* Fullscreen locker viewport: header + content + dock fit F11 */
+body.locker-page{height:100dvh;overflow:hidden}
+body.locker-page .shell{height:100dvh;min-height:0;overflow:hidden;padding-top:clamp(8px,1.6vh,20px);padding-bottom:clamp(6px,1vh,14px)}
+body.locker-page .topbar{flex:0 0 auto}
+body.locker-page .stage{flex:1 1 auto;min-height:0;height:auto;overflow:hidden;display:flex;align-items:stretch}
+body.locker-page .bottom-area{flex:0 0 auto;padding-top:clamp(4px,1vh,10px);padding-bottom:0}
+body.locker-page .dock{padding:4px}
+body.locker-page .nav-item{min-height:clamp(40px,6vh,58px);gap:3px;padding:5px 2px}
+body.locker-page .nav-item svg{width:18px;height:18px}
+@media(max-height:650px){body.locker-page .brand-logo{width:40px;height:40px;max-width:40px;max-height:40px;flex-basis:40px}body.locker-page .topbar{min-height:40px}body.locker-page .nav-item{min-height:38px}}
