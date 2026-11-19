@@ -44,13 +44,23 @@ export function mountShop(){
   modal.querySelector('#shop-item-desc').textContent=item.desc;
   modal.querySelector('#shop-item-price').textContent=fmt(item.price);
  };
- const close=()=>{
-  if(modal.hidden)return;
-  modal.hidden=true;
+ let exitTimer=null;
+ let isClosing=false;
+ const finishClose=()=>{
+  clearTimeout(exitTimer);exitTimer=null;
+  modal.hidden=true;modal.classList.remove('shop-is-closing');
   document.body.style.overflow=previousOverflow;
   document.removeEventListener('keydown',onKey);
+  isClosing=false;
   window.scrollTo(0,savedScrollY);
   if(lastFocus?.isConnected)lastFocus.focus({preventScroll:true});
+ };
+ const close=()=>{
+  if(modal.hidden||isClosing)return;
+  isClosing=true;
+  modal.classList.add('shop-is-closing');
+  // Let the short exit animation finish before restoring the shop.
+  exitTimer=setTimeout(finishClose,220);
  };
  const onKey=e=>{
   if(e.key==='Escape'){e.preventDefault();close();return}
@@ -72,6 +82,8 @@ export function mountShop(){
   const index=items.findIndex(i=>i.id===button.dataset.item);if(index<0)return;
   activeItemIndex=index;lastFocus=button;savedScrollY=window.scrollY;
   previousOverflow=document.body.style.overflow;
+  clearTimeout(exitTimer);exitTimer=null;isClosing=false;
+  modal.classList.remove('shop-is-closing');
   detail(items[index]);
   modal.hidden=false;
   document.body.style.overflow='hidden';
@@ -87,5 +99,5 @@ export function mountShop(){
   countdown.textContent=[Math.floor(secs/3600),Math.floor(secs%3600/60),secs%60].map(n=>String(n).padStart(2,'0')).join(':');
  };
  const timer=setInterval(tick,1000);tick();
- return ()=>{clearInterval(timer);document.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;modal.remove();closeModal=()=>{}};
+ return ()=>{clearTimeout(exitTimer);clearInterval(timer);document.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;modal.remove();closeModal=()=>{}};
 }
