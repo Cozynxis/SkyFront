@@ -21,7 +21,7 @@ export function installAccountMenu(){
  const updateSkin=()=>{const art=getEquippedSkinArt();for(const el of [trigger.querySelector('.sf-profile-skin'),layer.querySelector('.sf-drawer-skin')])el.innerHTML=art;trigger.title=getEquippedSkinName()+' · Account menu'};
  const updateProfile=async()=>{
   const {data}=await supabase.auth.getUser();const user=data?.user;
-  const name=user?.user_metadata?.username||localStorage.getItem('sf-player-name')||'PLAYER';
+  const name=user?.user_metadata?.username||'PLAYER';
   layer.querySelector('.sf-drawer-username').textContent=name;
   layer.querySelector('.sf-drawer-email').textContent=user?.email||'';
   const header=document.querySelector('#sf-profile-name');
@@ -40,7 +40,7 @@ export function installAccountMenu(){
  layer.querySelector('[data-account]').onclick=async()=>{
   const {data}=await supabase.auth.getUser(),user=data?.user;
   if(!user)return;
-  const name=user.user_metadata?.username||localStorage.getItem('sf-player-name')||'PLAYER';
+  const name=user.user_metadata?.username||'PLAYER';
   dialog('MY ACCOUNT',`<div class="sf-account-fields"><form data-form="username"><label>DISPLAY NAME<input name="username" maxlength="24" minlength="3" required value="${esc(name)}" autocomplete="nickname"></label><button type="submit">SAVE USERNAME</button><p role="status"></p></form><form data-form="email"><label>EMAIL ADDRESS<input type="email" name="email" required value="${esc(user.email)}" autocomplete="email"></label><button type="submit">UPDATE EMAIL</button><p role="status"></p></form><form data-form="password"><label>NEW PASSWORD<input type="password" name="password" minlength="8" required autocomplete="new-password" placeholder="At least 8 characters"></label><label>CONFIRM NEW PASSWORD<input type="password" name="confirm" minlength="8" required autocomplete="new-password"></label><button type="submit">CHANGE PASSWORD</button><p role="status"></p></form></div>`);
   for(const form of host.querySelectorAll('form'))form.onsubmit=async e=>{
    e.preventDefault();const button=form.querySelector('button'),msg=form.querySelector('p'),type=form.dataset.form;button.disabled=true;msg.textContent='Saving…';
@@ -50,7 +50,7 @@ export function installAccountMenu(){
     if(type==='email'){const email=form.elements.email.value.trim();if(email===user.email){msg.textContent='Your email is unchanged.';return}payload={email}}
     if(type==='password'){const password=form.elements.password.value;if(password!==form.elements.confirm.value)throw Error('Passwords do not match.');payload={password}}
     const {error}=await supabase.auth.updateUser(payload);if(error)throw error;
-    if(type==='username'){localStorage.setItem('sf-player-name',payload.data.username);window.dispatchEvent(new Event('skyfront:profile-changed'));await updateProfile()}
+    if(type==='username'){window.dispatchEvent(new Event('skyfront:profile-changed'));await updateProfile()}
     if(type==='email')msg.textContent='Check your new email address for a confirmation link.';
     else {msg.textContent='Saved successfully.';if(type==='password')form.reset()}
    }catch(err){msg.textContent=err.message||'Unable to save changes.'}finally{button.disabled=false}
