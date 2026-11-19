@@ -15,7 +15,7 @@ export function installFriends(){
  async function load(){
    const {data:{user}}=await supabase.auth.getUser();me=user?.id||null;
    if(!me){button.hidden=true;if(opened)close();return;}button.hidden=false;
-   const name=String(user.user_metadata?.username||localStorage.getItem('sf-player-name')||'Player').replace(/[^a-zA-Z0-9_]/g,'_').slice(0,32);
+   const name=String(user.user_metadata?.username||'Player').replace(/[^a-zA-Z0-9_]/g,'_').slice(0,32);
    if(name.length>=3&&(lastSyncedUser!==me||lastSyncedName!==name)){const {error}=await supabase.rpc('sf_social_action',{action:'sync',target:name});if(error){if(opened)notice('Username: '+error.message,true);}else{lastSyncedUser=me;lastSyncedName=name;}}
    const [req,blk,inv]=await Promise.all([
     supabase.from('sf_friend_requests').select('*').or('sender.eq.'+me+',receiver.eq.'+me),
