@@ -1,5 +1,6 @@
 import { mountLocker } from './locker.js';
 import { mountShop } from './shop.js';
+import { mountFrontPass } from './frontpass.js';
 import { installAudio } from './audio.js';
 import './style.css';
 
@@ -7,7 +8,7 @@ const pages = [
   {id:'play',label:'PLAY',icon:'play',colors:['#4b5a9d','#202b5e','#111a3c'],bar:'#27366e'},
   {id:'locker',label:'LOCKER',icon:'shirt',colors:['#427eb7','#234d8d','#112f5e'],bar:'#235488'},
   {id:'shop',label:'SHOP',icon:'bag',colors:['#45a6bd','#246c9d','#163c67'],bar:'#226d8b'},
-  {id:'battlepass',label:'BATTLE PASS',icon:'star',colors:['#b46b9f','#663a85','#291c57'],bar:'#693d83'},
+  {id:'battlepass',label:'FRONTPASS',icon:'star',colors:['#b46b9f','#663a85','#291c57'],bar:'#693d83'},
   {id:'quests',label:'QUESTS',icon:'flag',colors:['#6baf87','#31716b','#173c52'],bar:'#306b63'},
   {id:'compete',label:'COMPETE',icon:'trophy',colors:['#b27e5c','#82536a','#3e3159'],bar:'#865367'},
   {id:'career',label:'CAREER',icon:'chart',colors:['#6f7da8','#3d487c','#20264f'],bar:'#394b7c'},
@@ -30,6 +31,7 @@ let fillMode='FILL';
 let current = 'play';
 let pageEvents=new AbortController();
 let cleanupShop=null;
+let cleanupFrontPass=null;
 const app = document.querySelector('#app');
 app.innerHTML = `
   <div class="background" aria-hidden="true"><div class="light light-a"></div><div class="light light-b"></div><div class="horizon"></div><div class="grid-floor"></div></div>
@@ -63,20 +65,23 @@ function setPage(id){
  if(id===current && stage.childElementCount)return;
  pageEvents.abort();pageEvents=new AbortController();
  if(cleanupShop){cleanupShop();cleanupShop=null;}
+ if(cleanupFrontPass){cleanupFrontPass();cleanupFrontPass=null;}
  const p=pages.find(x=>x.id===id)||pages[0];current=p.id;
  document.body.classList.toggle('locker-page',p.id==='locker');
  document.body.classList.toggle('shop-page',p.id==='shop');
+ document.body.classList.toggle('frontpass-page',p.id==='battlepass');
  shopTopNav.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p.id));
  const root=document.documentElement;
  p.colors.forEach((color,i)=>root.style.setProperty('--bg'+(i+1),color));
  root.style.setProperty('--dock',p.bar);
  dock.querySelectorAll('button').forEach(btn=>{const active=btn.dataset.page===id;btn.classList.toggle('active',active);btn.setAttribute('aria-current',active?'page':'false')});
  stage.classList.remove('page-in');void stage.offsetWidth;stage.classList.add('page-in');
- stage.innerHTML=id==='play'?playMarkup():id==='locker'?'<div id="locker-root" style="width:100%"></div>':id==='shop'?'<div id="shop-root" style="width:100%"></div>':soonMarkup(p);
+ stage.innerHTML=id==='play'?playMarkup():id==='locker'?'<div id="locker-root" style="width:100%"></div>':id==='shop'?'<div id="shop-root" style="width:100%"></div>':id==='battlepass'?'<div id="frontpass-root" style="width:100%"></div>':soonMarkup(p);
  stage.querySelector('#back-home')?.addEventListener('click',()=>setPage('play'));
  if(id==='play') initModeSelector();
  if(id==='locker') mountLocker();
  if(id==='shop') cleanupShop=mountShop();
+ if(id==='battlepass') cleanupFrontPass=mountFrontPass();
  document.title='SKYFRONT — '+p.label;
 }
 installAudio();
