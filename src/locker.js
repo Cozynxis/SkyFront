@@ -10,6 +10,7 @@ const categories=[
 const key='skyfront-locker-v1';
 let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}
 const equipped=Object.fromEntries(categories.map(c=>[c.id,c.items.includes(saved[c.id])?saved[c.id]:c.items[0]]));
+let animateView=true;
 let section='you',view='overview',active='skin',selected=equipped.skin,search='',sort='default',favoritesOnly=false;
 let favorites={};try{favorites=JSON.parse(localStorage.getItem('skyfront-locker-favorites')||'{}')||{}}catch{}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -72,15 +73,16 @@ function tile(item,index,c){
  ${eq?'<span class="sf-equipped">✓</span>':''}</button>`;
 }
 
-function openCategory(id){active=id;selected=equipped[id];search='';sort='default';favoritesOnly=false;view='inventory';render()}
+function openCategory(id){animateView=true;active=id;selected=equipped[id];search='';sort='default';favoritesOnly=false;view='inventory';render()}
 function equipSelected(){equipped[active]=selected;save();render();const root=document.getElementById('locker-root');root?.querySelector('.sf-cosmetic.is-selected')?.classList.add('sf-equip-flash')}
 function render(){
+ const shouldAnimate=animateView;animateView=false;
  const root=document.getElementById('locker-root');if(!root)return;
  const c=cat(),isEmotes=section==='emotes',overview=view==='overview'&&!isEmotes;
  const filtered=c.items.map((item,index)=>({item,index})).filter(x=>x.item.toLowerCase().includes(search.toLowerCase())&&(!favoritesOnly||favorites[active+':'+x.item]));
  if(sort==='az')filtered.sort((a,b)=>a.item.localeCompare(b.item));
  if(sort==='za')filtered.sort((a,b)=>b.item.localeCompare(a.item));
- root.innerHTML=`<div class="sf-locker ${overview?'sf-overview':'sf-detail-view'}">
+ root.innerHTML=`<div class="sf-locker ${shouldAnimate?'sf-animate-view':'sf-instant-view'} ${overview?'sf-overview':'sf-detail-view'}">
  <aside class="sf-locker-rail"><div class="sf-rail-heading">LOCKER</div><button class="sf-rail-button ${!isEmotes?'active':''}" data-section="you" title="You"><span>◉</span><small>YOU</small></button><div class="sf-rail-divider"></div><button class="sf-rail-button ${isEmotes?'active':''}" data-section="emotes" title="Emotes"><span>♫</span><small>EMOTES</small></button></aside>
  ${isEmotes?emoteMarkup():overview?`<section class="sf-loadout"><div class="sf-loadout-sub">MY LOCKER LOADOUT</div><h1>CHARACTER</h1><div class="sf-loadout-grid">${categories.map(k=>`<button type="button" class="sf-loadout-card" data-category="${k.id}" aria-label="Open ${k.title}"><span class="sf-loadout-icon">${cosmeticArt(k.id,equipped[k.id],Math.max(0,k.items.indexOf(equipped[k.id])))}</span><strong>${k.title}</strong><small>${esc(equipped[k.id])}</small><span class="sf-loadout-arrow">↗</span></button>`).join('')}</div><div class="sf-loadout-note">SELECT A SLOT TO CUSTOMIZE YOUR LOADOUT</div></section>`:
  `<div class="sf-preview"><div class="sf-preview-stage"><div class="sf-preview-glow"></div><div class="sf-preview-object ${active}" style="--preview-color:${colors[Math.max(0,c.items.indexOf(selected))%colors.length]}">${active==='skin'||isEmotes?'<div class="sf-human"><div class="sf-head"></div><div class="sf-body"></div><div class="sf-arm left"></div><div class="sf-arm right"></div><div class="sf-leg left"></div><div class="sf-leg right"></div></div>':`<div class="sf-symbol">${selected==='None'?'×':c.icon}</div>`}</div><div class="sf-preview-platform"></div></div><div class="sf-preview-details"><div class="sf-rarity">SKYFRONT ORIGINAL · ${isEmotes?'EMOTE':c.title}</div><h2>${esc(isEmotes?'COMING SOON':selected)}</h2><p>${isEmotes?'Emotes will arrive in a future update.':'Original SKYFRONT cosmetic. 3D assets coming later.'}</p></div></div>
@@ -95,9 +97,9 @@ function render(){
  root.querySelectorAll('[data-emote-id]').forEach(b=>b.addEventListener('click',()=>assignEmote(b.dataset.emoteId)));
  root.querySelector('#sf-emote-clear')?.addEventListener('click',()=>{emoteWheel[emoteSlot]=null;saveEmoteWheel();render()});
  root.querySelector('#sf-emote-search')?.addEventListener('input',e=>{emoteSearch=e.target.value;const pos=e.target.selectionStart;render();const next=root.querySelector('#sf-emote-search');next?.focus();next?.setSelectionRange(pos,pos)});
- root.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>{section=b.dataset.section;view='overview';render()}));
+ root.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>{animateView=true;section=b.dataset.section;view='overview';render()}));
  root.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>openCategory(b.dataset.category)));
- root.querySelector('#sf-back')?.addEventListener('click',()=>{view='overview';render()});
+ root.querySelector('#sf-back')?.addEventListener('click',()=>{animateView=true;view='overview';render()});
  root.querySelectorAll('[data-item]').forEach(b=>{
   b.addEventListener('click',e=>{
    selected=b.dataset.item;
@@ -114,4 +116,4 @@ function render(){
  root.querySelector('#sf-favorite')?.addEventListener('click',()=>{favorites[favoriteKey()]=!favorites[favoriteKey()];localStorage.setItem('skyfront-locker-favorites',JSON.stringify(favorites));render()});
  root.querySelector('#sf-equip')?.addEventListener('click',equipSelected);
 }
-export function mountLocker(){section='you';view='overview';render()}
+export function mountLocker(){animateView=true;section='you';view='overview';render()}
