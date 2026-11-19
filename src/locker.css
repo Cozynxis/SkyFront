@@ -31,3 +31,34 @@
 @media(max-width:1150px){.sf-locker{grid-template-columns:55px minmax(0,39%) minmax(0,1fr)}.sf-locker.sf-overview{grid-template-columns:55px minmax(0,1fr)}.sf-loadout-grid{grid-template-columns:repeat(3,minmax(0,155px))}}
 @media(max-width:750px){.sf-locker{grid-template-columns:48px minmax(0,1fr);overflow:hidden}.sf-locker.sf-overview{grid-template-columns:48px minmax(0,1fr)}.sf-loadout-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sf-preview{display:none}.sf-inventory{grid-column:2;grid-row:1}.sf-locker-rail{grid-row:1}.sf-cosmetic-grid{max-height:none}.sf-inventory-header h1{font-size:34px}.sf-loadout-card{aspect-ratio:auto;min-height:105px}}
 @media(max-height:700px){.sf-loadout{padding-top:8px}.sf-loadout h1{margin-bottom:12px}.sf-loadout-card{min-height:86px;aspect-ratio:1.4}.sf-preview-details h2{font-size:33px}.sf-cosmetic-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+
+/* V4 cosmetic artwork and motion polish */
+.sf-art-svg{display:block;width:100%;height:100%;max-width:120px;max-height:130px;overflow:visible;filter:drop-shadow(0 7px 8px #071a4570)}
+.sf-loadout-icon{display:grid;place-items:center;width:100%;height:clamp(52px,9vh,110px);font-size:inherit;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.sf-loadout-icon .sf-art-svg{max-width:100px;max-height:110px}
+.sf-loadout-card{overflow:hidden;isolation:isolate;animation:sfCardEnter .4s both cubic-bezier(.2,.8,.2,1)}
+.sf-loadout-card:nth-child(2){animation-delay:45ms}.sf-loadout-card:nth-child(3){animation-delay:90ms}.sf-loadout-card:nth-child(4){animation-delay:135ms}.sf-loadout-card:nth-child(5){animation-delay:180ms}
+.sf-loadout-card:before{content:'';position:absolute;inset:-90% -50%;background:linear-gradient(115deg,transparent 42%,#ffffff26 50%,transparent 58%);transform:translateX(-90%) rotate(10deg);transition:transform .55s;pointer-events:none;z-index:2}
+.sf-loadout-card:hover:before{transform:translateX(90%) rotate(10deg)}
+.sf-loadout-card:hover .sf-loadout-icon{transform:scale(1.12) rotate(-3deg)}
+.sf-loadout-card:active{transform:scale(.97)}
+.sf-loadout-card strong,.sf-loadout-card small{position:relative;z-index:1}
+.sf-cosmetic-art{width:100%;min-height:0;overflow:hidden}
+.sf-cosmetic-art .sf-art-svg{width:75%;height:100%;max-height:90px}
+.sf-locker.sf-detail-view .sf-preview{animation:sfPreviewEnter .38s both}
+.sf-locker.sf-detail-view .sf-inventory{animation:sfInventoryEnter .36s both}
+.sf-locker.sf-overview .sf-loadout{animation:sfInventoryEnter .3s both}
+.sf-cosmetic{animation:sfCardEnter .28s both}
+.sf-cosmetic:nth-child(5n + 2){animation-delay:25ms}.sf-cosmetic:nth-child(5n + 3){animation-delay:50ms}.sf-cosmetic:nth-child(5n + 4){animation-delay:75ms}.sf-cosmetic:nth-child(5n){animation-delay:100ms}
+.sf-cosmetic:hover .sf-art-svg{transform:scale(1.09);transition:transform .2s}
+.sf-cosmetic.is-selected{box-shadow:0 0 0 2px #2a90f4,0 0 19px #8ddcff75}
+.sf-cosmetic.sf-equip-flash{animation:sfEquipFlash .55s ease-out both}
+.sf-category-tabs button,.sf-back,.sf-inventory-footer button,.sf-rail-button{transition:transform .18s,background .2s,box-shadow .2s}
+.sf-category-tabs button:hover,.sf-back:hover,.sf-inventory-footer button:not(:disabled):hover,.sf-rail-button:hover{transform:translateY(-2px);box-shadow:0 6px 18px #081a3850}
+.sf-category-tabs button:active,.sf-back:active,.sf-inventory-footer button:active{transform:scale(.96)}
+.sf-locker button:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@keyframes sfCardEnter{from{opacity:0;transform:translateY(13px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes sfPreviewEnter{from{opacity:0;transform:translateX(-25px)}to{opacity:1;transform:translateX(0)}}
+@keyframes sfInventoryEnter{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+@keyframes sfEquipFlash{0%{filter:brightness(1.8);box-shadow:0 0 0 5px #caff74}100%{filter:brightness(1);box-shadow:0 0 0 2px #2a90f4}}
+@media(prefers-reduced-motion:reduce){.sf-locker *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
