@@ -5,6 +5,7 @@ import { installAudio } from './audio.js';
 import { mountCareer } from './career.js';
 import { mountCommunity } from './community.js';
 import { installAuthGate } from './auth.js';
+import { installAccountMenu } from './account-menu.js';
 import { supabase } from './community.js';
 import './style.css';
 
@@ -51,17 +52,7 @@ app.innerHTML = `
     <footer class="bottom-area"><nav class="dock" aria-label="Main navigation"></nav></footer>
   </div>`;
 installAuthGate();
-app.querySelector('#sf-signout').addEventListener('click',async ()=>{
-  const button=app.querySelector('#sf-signout');
-  button.disabled=true;
-  const {error}=await supabase.auth.signOut();
-  button.disabled=false;
-  if(error)window.alert('Could not sign out: '+error.message);
-});
-supabase.auth.onAuthStateChange((_event,session)=>{
-  const label=app.querySelector('#sf-profile-name');
-  if(label)label.innerHTML=(session?.user?.email?.split('@')[0]||'PLAYER ONE').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'<small>LEVEL 1</small>';
-});
+installAccountMenu();
 const stage=app.querySelector('#stage');
 const dock=app.querySelector('.dock');
 const shopTopNav=app.querySelector('#shop-top-nav');
