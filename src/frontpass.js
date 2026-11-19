@@ -23,6 +23,13 @@ export function mountFrontPass(){
  const COST=950;
  const getCoins=()=>{const el=document.querySelector('#wallet-balance');const n=Number((el?.textContent||'100000').replace(/[^\d]/g,''));return Number.isFinite(n)?n:100000};
  const updateCoins=n=>{try{localStorage.setItem('sf-coins-balance',String(n))}catch{};const el=document.querySelector('#wallet-balance');if(el)el.textContent=n.toLocaleString('en-US');};
+ // Demo mode: reset the purchase each time FrontPass is opened.
+ // Refund the previous demo purchase so the reveal can be tested repeatedly.
+ if(localStorage.getItem('sf-frontpass-premium')==='true'){
+  const previousCoins=Number(localStorage.getItem('sf-coins-balance'));
+  if(Number.isFinite(previousCoins))updateCoins(previousCoins+COST);
+  localStorage.removeItem('sf-frontpass-premium');
+ }
  const hasPremium=()=>localStorage.getItem('sf-frontpass-premium')==='true';
  const logo=import.meta.env.BASE_URL+'images/skyfront-logo.png';
  const closeReveal=()=>{
