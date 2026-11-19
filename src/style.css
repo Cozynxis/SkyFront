@@ -56,3 +56,20 @@
 .news-art{position:relative}
 .mode-logo{display:block;width:40px;height:40px;object-fit:cover;border-radius:9px;margin-bottom:auto}
 .mode-tile.locked .mode-logo{filter:grayscale(1);opacity:.55}
+
+/* Game mode selector V2 — fixed above the lobby */
+.mode-overlay{z-index:9999}
+.mode-dialog{width:min(650px,calc(100vw - 28px));max-height:min(88vh,760px);background:linear-gradient(145deg,#18294e,#111c37);border-radius:18px}
+.mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mode-tile{transition:transform .18s,filter .18s,border-color .18s}
+button.mode-tile:hover{transform:translateY(-3px);filter:brightness(1.13)}
+.mode-tile.locked{opacity:.7;pointer-events:none}
+.team-options{overflow:hidden}
+.team-size-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:11px;font-weight:800;letter-spacing:.08em}
+.size-control{display:flex;align-items:center;gap:12px}
+.size-control button{width:35px;height:33px;border:1px solid #ffffff55;border-radius:8px;background:#ffffff20;color:white;font-size:20px;cursor:pointer}
+.size-control button:disabled{opacity:.35;cursor:not-allowed}
+.size-control strong{min-width:45px;text-align:center}
+.mode-confirm:hover{filter:brightness(1.1)}
+.mode-dialog button:focus-visible,.mode-selector:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@media(max-width:480px){.mode-dialog{padding:14px}.mode-tile{min-height:108px;padding:11px}.mode-tile strong{font-size:19px}.mode-logo{width:30px;height:30px}}
