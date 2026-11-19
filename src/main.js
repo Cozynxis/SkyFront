@@ -68,8 +68,9 @@ fpsIndicator.hidden=!readSettings().showFps;
 fpsIndicator.textContent='-- FPS';
 document.body.appendChild(fpsIndicator);
 let fpsFrames=0,fpsWindowStart=0;
+let fpsEnabled=Boolean(readSettings().showFps);
 function sampleFps(now){
- if(!document.hidden&&readSettings().showFps){
+ if(!document.hidden&&fpsEnabled){
   if(!fpsWindowStart)fpsWindowStart=now;
   fpsFrames++;
   if(now-fpsWindowStart>=500){
@@ -82,7 +83,8 @@ function sampleFps(now){
 requestAnimationFrame(sampleFps);
 document.addEventListener('visibilitychange',()=>{fpsFrames=0;fpsWindowStart=0;});
 window.addEventListener('skyfront:settings-changed',e=>{
- fpsIndicator.hidden=!e.detail.showFps;
+ fpsEnabled=Boolean(e.detail.showFps);
+ fpsIndicator.hidden=!fpsEnabled;
  if(!e.detail.showFps){fpsFrames=0;fpsWindowStart=0;}
 });
 installAuthGate();
