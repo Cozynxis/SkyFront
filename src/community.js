@@ -106,8 +106,35 @@ export function mountCommunity(){
     area.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>{editing=articles.find(a=>a.id===b.dataset.edit);adminSection('news')});
     area.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this announcement?'))return;const r=await supabase.from('sf_announcements').delete().eq('id',b.dataset.delete);if(r.error)alert(r.error.message);else{await load();adminSection('news')}});
    }else{
-    area.innerHTML=`<form class="cm-editor"><h3>CREATE POLL</h3><label>Question<input name="question" required maxlength="240"></label><label>Options (one per line, 2–8)<textarea name="options" rows="6" placeholder="Option A&#10;Option B" required></textarea></label><button type="submit">PUBLISH POLL</button><p class="cm-form-message"></p></form><div class="cm-admin-list">${polls.map(p=>`<div><span>${escapeHTML(p.question)}</span><button data-toggle="${p.id}">${p.active?'CLOSE':'REOPEN'}</button><button data-delete-poll="${p.id}">DELETE</button></div>`).join('')}</div>`;
-    area.querySelector('form').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,f=new FormData(form),opts=String(f.get('options')).split('\n').map(x=>x.trim()).filter(Boolean);if(opts.length<2||opts.length>8){form.querySelector('.cm-form-message').textContent='Enter 2–8 options.';return;}const r=await supabase.from('sf_polls').insert({question:String(f.get('question')).trim()}).select('id').single();if(r.error){form.querySelector('.cm-form-message').textContent=r.error.message;return;}const s=await supabase.from('sf_poll_options').insert(opts.map((label,position)=>({poll_id:r.data.id,label,position})));if(s.error){await supabase.from('sf_polls').delete().eq('id',r.data.id);form.querySelector('.cm-form-message').textContent=s.error.message;return;}await load();adminSection('polls')};
+    area.innerHTML=`<form class="cm-editor"><h3>${editing?.id?"EDIT":"CREATE"} POLL</h3><label>Question<input name="question" required maxlength="240" value="${escapeHTML(editing?.question||'')}"></label><label>Options (one per line, 2–8)<textarea name="options" rows="6" required>${escapeHTML(editing?.id?options.filter(o=>o.poll_id===editing.id).map(o=>o.label).join("\n"):"")}</textarea></label><label>End date<input name="closes_at" type="datetime-local"></label><label>Placement<select name="placement"><option value="auto">Automatic</option><option value="recent">Pinned at top</option><option value="active">Active section</option><option value="archive">Ended archive</option></select></label><button type="submit">${editing?.id?"SAVE POLL":"PUBLISH POLL"}</button><p class="cm-form-message"></p></form><div class="cm-admin-list">${polls.map(p=>`<div><span>${escapeHTML(p.question)}</span><button data-edit-poll="${p.id}">EDIT</button><select data-place="${p.id}" aria-label="Move poll"><option value="auto" ${p.placement==="auto"?"selected":""}>AUTO</option><option value="recent" ${p.placement==="recent"?"selected":""}>PIN</option><option value="active" ${p.placement==="active"?"selected":""}>ACTIVE</option><option value="archive" ${p.placement==="archive"?"selected":""}>ARCHIVE</option></select><button data-toggle="${p.id}">${p.active?'CLOSE':'REOPEN'}</button><button data-delete-poll="${p.id}">DELETE</button></div>`).join('')}</div>`;
+    area.querySelector('form').onsubmit=async e=>{
+      e.preventDefault();
+      const form=e.currentTarget,f=new FormData(form),msg=form.querySelector('.cm-form-message');
+      const opts=String(f.get('options')).split('\n').map(x=>x.trim()).filter(Boolean);
+      if(opts.length<2||opts.length>8){msg.textContent='Enter 2–8 options.';return;}
+      const payload={question:String(f.get('question')).trim(),placement:f.get('placement'),closes_at:f.get('closes_at')?new Date(f.get('closes_at')).toISOString():null};
+      if(editing?.id){
+        const old=options.filter(o=>o.poll_id===editing.id);
+        const changed=old.length!==opts.length||old.some((o,i)=>o.label!==opts[i]);
+        if(changed&&votes.some(v=>v.poll_id===editing.id)){msg.textContent='Options cannot be changed once a poll has votes. Edit the question or placement instead.';return;}
+        const r=await supabase.from('sf_polls').update(payload).eq('id',editing.id);
+        if(r.error){msg.textContent=r.error.message;return;}
+        if(changed){
+          const d=await supabase.from('sf_poll_options').delete().eq('poll_id',editing.id);
+          if(d.error){msg.textContent=d.error.message;return;}
+          const o=await supabase.from('sf_poll_options').insert(opts.map((label,position)=>({poll_id:editing.id,label,position})));
+          if(o.error){msg.textContent=o.error.message;return;}
+        }
+      }else{
+        const r=await supabase.from('sf_polls').insert(payload).select('id').single();
+        if(r.error){msg.textContent=r.error.message;return;}
+        const o=await supabase.from('sf_poll_options').insert(opts.map((label,position)=>({poll_id:r.data.id,label,position})));
+        if(o.error){await supabase.from('sf_polls').delete().eq('id',r.data.id);msg.textContent=o.error.message;return;}
+      }
+      editing=null;await load();adminSection('polls');
+    };
+    area.querySelectorAll('[data-edit-poll]').forEach(b=>b.onclick=()=>{editing=polls.find(p=>p.id===b.dataset.editPoll);adminSection('polls')});
+    area.querySelectorAll('[data-place]').forEach(b=>b.onchange=async()=>{const r=await supabase.from('sf_polls').update({placement:b.value}).eq('id',b.dataset.place);if(r.error)alert(r.error.message);else{await load();adminSection('polls')}});
     area.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{const p=polls.find(x=>x.id===b.dataset.toggle);const r=await supabase.from('sf_polls').update({active:!p.active}).eq('id',p.id);if(r.error)alert(r.error.message);else{await load();adminSection('polls')}});
     area.querySelectorAll('[data-delete-poll]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this poll and its votes?'))return;const r=await supabase.from('sf_polls').delete().eq('id',b.dataset.deletePoll);if(r.error)alert(r.error.message);else{await load();adminSection('polls')}});
    }
