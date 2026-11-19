@@ -19,3 +19,12 @@
 .sf-party-subnote{font-size:11px;color:#aebfe2;padding:5px 0}
 @keyframes sfPartySub{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 @media(max-width:700px){.sf-party-trigger{width:42px;height:42px;left:60px}}
+
+/* Leader-only expandable management; members remain readable without controls. */
+.sf-party-member:disabled{cursor:default;opacity:1}
+.sf-party-member:disabled:hover{background:transparent}
+.sf-party-member:not(:disabled){cursor:pointer}
+.sf-party-member:not(:disabled):hover{background:#ffffff20}
+.sf-party-member:not(:disabled) .sf-party-chevron{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#ffffff1a;transition:transform .2s}
+.sf-party-member.selected .sf-party-chevron{transform:rotate(180deg)}
+.sf-party-submenu button:disabled{opacity:.5;cursor:not-allowed}
