@@ -83,6 +83,7 @@ function setPage(id){
  const p=pages.find(x=>x.id===id)||pages[0];current=p.id;
  document.body.classList.toggle('locker-page',p.id==='locker');
  document.body.classList.toggle('shop-page',p.id==='shop');
+ document.body.classList.toggle('community-page',p.id==='community');
  document.body.classList.toggle('frontpass-page',p.id==='battlepass');
  shopTopNav.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p.id));
  const root=document.documentElement;
