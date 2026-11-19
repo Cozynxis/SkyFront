@@ -51,3 +51,41 @@
 .cm-modal:has(.cm-admin-area) .cm-admin-list{max-height:340px;overflow:auto}.cm-modal:has(.cm-admin-area) .cm-admin-list>div{flex-wrap:wrap;border:1px solid #ffffff20;padding:12px}
 @media(max-width:850px){.cm-studio-layout{grid-template-columns:1fr}.cm-studio-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.cm-studio-live{display:none}}
 @media(max-width:520px){.cm-studio-filters{grid-template-columns:1fr}.cm-studio-filters select{width:100%;max-width:none}.cm-studio-header{padding-right:20px}.cm-studio-item{grid-template-columns:56px minmax(0,1fr)}.cm-studio-thumb{width:56px;height:56px}}
+
+/* Admin Studio viewport fit: fixed frame with independently scrolling content */
+.cm-modal-backdrop:has(.cm-admin-area){padding:clamp(8px,1.5vh,16px);align-items:center;justify-items:center;overflow:hidden}
+.cm-modal:has(.cm-admin-area){box-sizing:border-box;width:min(1120px,calc(100vw - 24px));height:min(800px,calc(100dvh - 24px));max-height:calc(100dvh - 24px);overflow:hidden;display:flex;flex-direction:column;padding:clamp(12px,1.7vw,22px);border-radius:16px}
+.cm-modal:has(.cm-admin-area) .cm-studio-header{flex:0 0 auto;padding-right:45px}
+.cm-modal:has(.cm-admin-area) .cm-studio-header h2{font-size:clamp(27px,3.2vw,39px);margin:5px 0}
+.cm-modal:has(.cm-admin-area) .cm-studio-stats{flex:0 0 auto;margin:12px 0;gap:8px}
+.cm-modal:has(.cm-admin-area) .cm-studio-stats>div{padding:9px 12px}
+.cm-modal:has(.cm-admin-area) .cm-studio-stats strong{font-size:24px;margin-top:2px}
+.cm-modal:has(.cm-admin-area) .cm-admin-tabs{flex:0 0 auto;margin-bottom:12px}
+.cm-modal:has(.cm-admin-area) .cm-admin-tabs button{padding:10px 13px;font-size:11px}
+.cm-modal:has(.cm-admin-area) .cm-admin-area{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:3px}
+.cm-modal:has(.cm-admin-area) .cm-studio-toolbar{margin-bottom:10px}
+.cm-modal:has(.cm-admin-area) .cm-studio-layout{align-items:stretch;min-height:0}
+.cm-modal:has(.cm-admin-area) .cm-studio-library,.cm-modal:has(.cm-admin-area) .cm-studio-compose{min-width:0;max-width:100%;padding:12px}
+.cm-modal:has(.cm-admin-area) .cm-studio-items{max-height:min(44dvh,390px)}
+.cm-modal:has(.cm-admin-area) .cm-editor{gap:10px}
+.cm-modal:has(.cm-admin-area) .cm-editor textarea{resize:vertical;min-height:80px}
+.cm-modal:has(.cm-admin-area) .cm-studio-image-preview{height:105px}
+.cm-modal:has(.cm-admin-area) .cm-close{z-index:3}
+@media(max-width:850px){
+ .cm-modal:has(.cm-admin-area) .cm-studio-layout{grid-template-columns:1fr}
+ .cm-modal:has(.cm-admin-area) .cm-studio-items{max-height:220px}
+ .cm-modal:has(.cm-admin-area) .cm-studio-header p{display:none}
+}
+@media(max-height:720px){
+ .cm-modal:has(.cm-admin-area) .cm-studio-stats{grid-template-columns:repeat(4,minmax(0,1fr));margin:8px 0}
+ .cm-modal:has(.cm-admin-area) .cm-studio-stats>div{padding:7px 9px}
+ .cm-modal:has(.cm-admin-area) .cm-studio-stats strong{font-size:19px}
+ .cm-modal:has(.cm-admin-area) .cm-studio-stats small{font-size:8px}
+ .cm-modal:has(.cm-admin-area) .cm-admin-tabs{margin-bottom:7px}
+ .cm-modal:has(.cm-admin-area) .cm-studio-image-preview{height:80px}
+}
+@media(max-width:520px){
+ .cm-modal:has(.cm-admin-area){width:calc(100vw - 12px);height:calc(100dvh - 12px);max-height:calc(100dvh - 12px);padding:12px}
+ .cm-modal:has(.cm-admin-area) .cm-studio-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cm-modal:has(.cm-admin-area) .cm-studio-live{display:none}
+}
