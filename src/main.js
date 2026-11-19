@@ -76,6 +76,8 @@ function soonMarkup(p){
   return `<div class="soon-layout"><div class="mascot" aria-hidden="true"><div class="mascot-shadow"></div><div class="mascot-body"><div class="mascot-eye eye-left"></div><div class="mascot-eye eye-right"></div><div class="mascot-mouth"></div><div class="mascot-cheek cheek-left"></div><div class="mascot-cheek cheek-right"></div></div><div class="mascot-arm arm-left"></div><div class="mascot-arm arm-right"></div><div class="mascot-foot foot-left"></div><div class="mascot-foot foot-right"></div><span class="mascot-question">?</span></div><div class="soon-eyebrow">${p.label} / UNDER CONSTRUCTION</div><h1>${heading}</h1><p>${description}</p><button class="back-button" type="button" id="back-home">← BACK TO LOBBY</button></div>`;
 }
 function setPage(id){
+ document.body.classList.toggle('sf-on-play',id==='play');
+ if(id!=='play')document.dispatchEvent(new Event('sf:leave-play'));
  if(id===current && stage.childElementCount)return;
  pageEvents.abort();pageEvents=new AbortController();
  if(cleanupShop){cleanupShop();cleanupShop=null;}
