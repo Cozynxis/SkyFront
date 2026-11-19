@@ -81,3 +81,12 @@ button.mode-tile:hover{transform:translateY(-3px);filter:brightness(1.13)}
 .topbar .brand-logo{width:54px;height:54px;max-width:54px;max-height:54px;flex:0 0 54px}
 .topbar{min-height:54px}
 @media(max-width:650px){.topbar .user>b,.topbar .user .profile-logo{width:38px;height:38px;min-width:38px;min-height:38px;max-width:38px;max-height:38px}.topbar .user>b{flex-basis:38px}}
+
+/* Fill / No-Fill teammate selector */
+.fill-options{margin-top:14px;padding-top:14px;border-top:1px solid #ffffff2b}
+.fill-options[hidden]{display:none!important}
+.fill-title{display:block;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.1em;color:#c7d8f4}
+.fill-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fill-buttons button{padding:12px 8px;border:1px solid #ffffff40;border-radius:8px;background:#ffffff17;color:#fff;font-weight:800;cursor:pointer;transition:background .18s,color .18s}
+.fill-buttons button.selected{background:#fff;color:#1d2d51}
+.fill-options p{margin:10px 0 0;font-size:11px;line-height:1.5;color:#c9d6ed}
