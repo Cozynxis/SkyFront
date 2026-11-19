@@ -9,7 +9,7 @@ let adminOpen=false,editing=null,adminChecked=false,adminAllowed=false;
 let adminHost=null;
 const fetchNews=async()=>{
  const [a,c]=await Promise.all([
-  supabase.from('sf_announcements').select('id,title,body,image_url,category,published,pinned,lobby_enabled,lobby_order,created_at').order('lobby_order',{ascending:true}).order('created_at',{ascending:false}),
+  supabase.from('sf_lobby_announcements').select('id,title,body,image_url,category,published,pinned,lobby_enabled,lobby_order,created_at').order('lobby_order',{ascending:true}).order('created_at',{ascending:false}),
   supabase.from('sf_lobby_news_config').select('rotation_seconds').eq('id',1).maybeSingle()
  ]);
  if(a.error){console.warn('Lobby news:',a.error.message);return}
@@ -63,7 +63,7 @@ function renderAdmin(){
  adminHost.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editArticle(entries.find(e=>e.id===b.dataset.edit)));
  adminHost.querySelectorAll('[data-delete]').forEach(b=>b.onclick=async()=>{
   if(!confirm('Delete this announcement permanently?'))return;
-  const {error}=await supabase.from('sf_announcements').delete().eq('id',b.dataset.delete);
+  const {error}=await supabase.from('sf_lobby_announcements').delete().eq('id',b.dataset.delete);
   if(error){alert(error.message);return}await fetchNews();
  });
  adminHost.querySelectorAll('[data-move]').forEach(b=>b.onclick=async()=>{
@@ -71,7 +71,7 @@ function renderAdmin(){
   if(idx<0||other<0||other>=entries.length)return;
   const reordered=[...entries];
   [reordered[idx],reordered[other]]=[reordered[other],reordered[idx]];
-  const results=await Promise.all(reordered.map((item,i)=>supabase.from('sf_announcements').update({lobby_order:(i+1)*10}).eq('id',item.id)));
+  const results=await Promise.all(reordered.map((item,i)=>supabase.from('sf_lobby_announcements').update({lobby_order:(i+1)*10}).eq('id',item.id)));
   const failure=results.find(r=>r.error);
   if(failure){alert(failure.error.message);return}
   await fetchNews();
@@ -88,7 +88,7 @@ function editArticle(item){
   e.preventDefault();const button=f.querySelector('[type=submit]');button.disabled=true;
   const values={title:f.elements.title.value.trim(),category:f.elements.category.value.trim()||'NEWS',body:f.elements.body.value.trim(),image_url:safeUrl(f.elements.image_url.value)||null,published:f.elements.published.checked,lobby_enabled:f.elements.lobby_enabled.checked,pinned:f.elements.pinned.checked};
   if(f.elements.image_url.value&&!values.image_url){f.querySelector('[role=status]').textContent='Please enter a valid HTTPS image URL.';button.disabled=false;return}
-  const query=editing?supabase.from('sf_announcements').update(values).eq('id',editing):supabase.from('sf_announcements').insert({...values,lobby_order:entries.length?Math.max(...entries.map(x=>x.lobby_order))+10:10});
+  const query=editing?supabase.from('sf_lobby_announcements').update(values).eq('id',editing):supabase.from('sf_lobby_announcements').insert({...values,lobby_order:entries.length?Math.max(...entries.map(x=>x.lobby_order))+10:10});
   const {error}=await query;
   if(error){f.querySelector('[role=status]').textContent=error.message;button.disabled=false;return}
   closeModal();await fetchNews();
@@ -103,7 +103,7 @@ function closeAdmin(){adminOpen=false;adminHost?.replaceChildren()}
 export function installLobbyNews(){
  fetchNews();refresh=setInterval(fetchNews,20000);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(rotation);else{fetchNews();schedule()}});
- supabase.channel('sf-lobby-news').on('postgres_changes',{event:'*',schema:'public',table:'sf_announcements'},fetchNews).on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_news_config'},fetchNews).subscribe();
+ supabase.channel('sf-lobby-news').on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_announcements'},fetchNews).on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_news_config'},fetchNews).subscribe();
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(modal?.childElementCount)closeModal();else if(adminOpen)closeAdmin()}});
 }
 export function refreshLobbyNews(){renderLobby()}
