@@ -35,6 +35,8 @@ export function createRevealStage(host, logoUrl) {
  const columns=[];
  const colGeo=new THREE.BoxGeometry(.25,9,.25);
  for(let i=0;i<14;i++){
+  // Keep the front-center sightline clear so no pillar covers the SKYFRONT logo.
+  if(i===0)continue;
   const a=i/14*Math.PI*2;
   const mat=new THREE.MeshStandardMaterial({color:0x182238,emissive:0x315da9,emissiveIntensity:.4,metalness:.8});
   const col=new THREE.Mesh(colGeo,mat);
