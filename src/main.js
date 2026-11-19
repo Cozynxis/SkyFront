@@ -20,6 +20,8 @@ const icons = {
   trophy:svg('<path d="M7 3h10v8a5 5 0 0 1-10 0V3Zm0 2H4v3a4 4 0 0 0 3 4m10-7h3v3a4 4 0 0 1-3 4m-5 4v4m-5 1h10"/>'),
   chart:svg('<path d="M4 20V4m0 16h16M8 15l4-5 3 2 5-7"/>')
 };
+const logoUrl = import.meta.env.BASE_URL + 'images/skyfront-logo.png';
+let selectedTeam='SOLO';
 let current = 'play';
 let pageEvents=new AbortController();
 const app = document.querySelector('#app');
@@ -27,8 +29,8 @@ app.innerHTML = `
   <div class="background" aria-hidden="true"><div class="light light-a"></div><div class="light light-b"></div><div class="horizon"></div><div class="grid-floor"></div></div>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">S<span class="brand-spark">✦</span></span><span>SKYFRONT<small>PRE-ALPHA</small></span></div>
-      <div class="top-right"><span class="status"><i></i> ONLINE PREVIEW</span><span class="user"><b>S</b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
+      <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="SKYFRONT logo"><span>SKYFRONT<small>PRE-ALPHA</small></span></div>
+      <div class="top-right"><span class="status"><i></i> ONLINE PREVIEW</span><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
     </header>
     <main class="stage" id="stage" aria-live="polite"></main>
     <footer class="bottom-area"><div class="bottom-info"><span>SKYFRONT <span class="dot">•</span> WEB EDITION</span><span>EARLY ACCESS PREVIEW</span></div><nav class="dock" aria-label="Main navigation"></nav></footer>
@@ -39,10 +41,10 @@ dock.innerHTML=pages.map(p=>`<button class="nav-item" type="button" data-page="$
 dock.addEventListener('click',e=>{const btn=e.target.closest('[data-page]');if(btn) setPage(btn.dataset.page);});
 function playMarkup(){
   return `<div class="play-layout">
-    <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to SKYFRONT <span>↗</span></div></aside>
+    <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><img class="news-logo" src="${logoUrl}" alt=""><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to SKYFRONT <span>↗</span></div></aside>
     <div class="center-space" aria-hidden="true"><div class="platform platform-back"></div><div class="platform platform-main"></div></div>
     <section class="game-panel"><div class="panel-eyebrow"><span class="pulse-dot"></span> THE LOBBY</div><h1>READY TO PLAY?</h1><button class="mode-card mode-selector" id="select-mode" type="button"><div><small>SELECTED MODE</small><strong id="mode-label">BATTLE ROYALE · SOLO</strong></div><span class="mode-icon">⌄</span></button><button class="primary-button" id="start-play" type="button">PLAY <span>SOON</span></button></section>
-  </div><div class="mode-overlay" id="mode-overlay" hidden><div class="mode-backdrop" id="mode-backdrop"></div><section class="mode-dialog" role="dialog" aria-modal="true" aria-labelledby="mode-heading"><div class="mode-heading"><h2 id="mode-heading">SELECT GAME MODE</h2><button class="mode-close" id="mode-close" type="button" aria-label="Close">×</button></div><div class="mode-grid"><button class="mode-tile selected" id="battle-royale-tile" type="button"><span>✦</span><strong>BATTLE ROYALE</strong><small>LAST PLAYER STANDING</small></button><div class="mode-tile locked">🔒<strong>COMING SOON</strong></div><div class="mode-tile locked">🔒<strong>COMING SOON</strong></div><div class="mode-tile locked">🔒<strong>COMING SOON</strong></div></div><div class="team-options" id="team-options" hidden><h3>TEAM SETTINGS</h3><div class="team-buttons"><button data-team="SOLO" class="selected" type="button">SOLO</button><button data-team="DUO" type="button">DUO</button><button data-team="SQUAD" type="button">SQUAD</button></div><button class="mode-confirm" id="mode-confirm" type="button">CONFIRM</button></div></section></div>`;
+  </div><div class="mode-overlay" id="mode-overlay" hidden><div class="mode-backdrop" id="mode-backdrop"></div><section class="mode-dialog" role="dialog" aria-modal="true" aria-labelledby="mode-heading"><div class="mode-heading"><h2 id="mode-heading">SELECT GAME MODE</h2><button class="mode-close" id="mode-close" type="button" aria-label="Close">×</button></div><div class="mode-grid"><button class="mode-tile selected" id="battle-royale-tile" type="button"><img class="mode-logo" src="${logoUrl}" alt=""><strong>BATTLE ROYALE</strong><small>LAST PLAYER STANDING</small></button><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked">🔒<strong>COMING SOON</strong></div><div class="mode-tile locked">🔒<strong>COMING SOON</strong></div></div><div class="team-options" id="team-options" hidden><h3>TEAM SETTINGS</h3><div class="team-buttons"><button data-team="SOLO" class="selected" type="button">SOLO</button><button data-team="DUO" type="button">DUO</button><button data-team="SQUAD" type="button">SQUAD</button></div><button class="mode-confirm" id="mode-confirm" type="button">CONFIRM</button></div></section></div>`;
 }
 function soonMarkup(p){
   return `<div class="soon-layout"><div class="mascot" aria-hidden="true"><div class="mascot-shadow"></div><div class="mascot-body"><div class="mascot-eye eye-left"></div><div class="mascot-eye eye-right"></div><div class="mascot-mouth"></div><div class="mascot-cheek cheek-left"></div><div class="mascot-cheek cheek-right"></div></div><div class="mascot-arm arm-left"></div><div class="mascot-arm arm-right"></div><div class="mascot-foot foot-left"></div><div class="mascot-foot foot-right"></div><span class="mascot-question">?</span></div><div class="soon-eyebrow">${p.label} / UNDER CONSTRUCTION</div><h1>NOT HERE <em>YET!</em></h1><p>This page doesn't exist yet. Our little friend is working on it.</p><button class="back-button" type="button" id="back-home">← BACK TO LOBBY</button></div>`;
@@ -63,7 +65,6 @@ function setPage(id){
 installAudio();
 setPage('play');
 
-let selectedTeam='SOLO';
 function initModeSelector(){
  const overlay=stage.querySelector('#mode-overlay');
  const options=stage.querySelector('#team-options');
