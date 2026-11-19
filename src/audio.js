@@ -54,3 +54,25 @@ export function resumeMusicAfterCinematic(){
  cinematicPauseCount=Math.max(0,cinematicPauseCount-1);
  if(cinematicPauseCount===0&&musicStarted)sounds.music.play().catch(()=>{});
 }
+
+const SETTINGS_KEY='skyfront-settings-v1';
+const DEFAULT_SETTINGS={music:34,effects:65,notifications:true,notificationVolume:60,fps:60,quality:'high',animations:true};
+export function readSettings(){
+ try{return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}}catch{return {...DEFAULT_SETTINGS}}
+}
+export function updateSettings(patch){
+ const next={...readSettings(),...patch};
+ try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(next))}catch{}
+ applyAudioSettings(next);
+ window.dispatchEvent(new CustomEvent('skyfront:settings-changed',{detail:next}));
+ return next;
+}
+export function applyAudioSettings(settings=readSettings()){
+ sounds.music.volume=Math.max(0,Math.min(1,Number(settings.music)/100));
+ for(const key of ['click','hover','play']){
+  const base={click:.85,hover:.5,play:1}[key];
+  sounds[key].volume=Math.max(0,Math.min(1,Number(settings.effects)/100))*base;
+ }
+ if(settings.music>0&&musicStarted&&cinematicPauseCount===0&&sounds.music.paused)sounds.music.play().catch(()=>{});
+}
+applyAudioSettings();
