@@ -48,8 +48,13 @@ function render(){
  root.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>openCategory(b.dataset.category)));
  root.querySelector('#sf-back')?.addEventListener('click',()=>{view='overview';render()});
  root.querySelectorAll('[data-item]').forEach(b=>{
-  b.addEventListener('click',()=>{selected=b.dataset.item;render()});
-  b.addEventListener('dblclick',()=>{selected=b.dataset.item;equipSelected()});
+  b.addEventListener('click',e=>{
+   selected=b.dataset.item;
+   if(e.detail>=2){clearTimeout(window.__sfLockerClickTimer);equipSelected();return}
+   clearTimeout(window.__sfLockerClickTimer);
+   window.__sfLockerClickTimer=setTimeout(()=>render(),240);
+  });
+  b.addEventListener('dblclick',()=>{clearTimeout(window.__sfLockerClickTimer);selected=b.dataset.item;equipSelected()});
  });
  const input=root.querySelector('#sf-search');
  input?.addEventListener('input',()=>{const pos=input.selectionStart;search=input.value;render();const next=root.querySelector('#sf-search');next?.focus();next?.setSelectionRange(pos,pos)});
