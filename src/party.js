@@ -24,15 +24,39 @@ export function installParty(){
  };
  const load=async()=>{if(loading){queued=true;return;}loading=true;try{const {data:{user}}=await supabase.auth.getUser();if(user?.id!==me){me=user?.id||null;rows=[];lastPartySnapshot=null;selectedMember=null;}if(!me){render();return;}const {data,error}=await supabase.rpc('sf_party_view');if(error){if(opened)notice(error.message,true);return;}const next=data||[];
  const previous=lastPartySnapshot;
- const nextParty=next[0]?.party_id||next.map(p=>p.user_id).sort().join(':')||null;
- if(previous&&previous.party===nextParty&&nextParty){
-  const before=new Map(previous.members.map(p=>[p.user_id,p]));
-  const after=new Map(next.map(p=>[p.user_id,p]));
-  for(const p of next)if(!before.has(p.user_id)&&p.user_id!==me)document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'join',username:p.username||'Player'}}));
-  for(const p of previous.members)if(!after.has(p.user_id)&&p.user_id!==me)document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'leave',username:p.username||'Player'}}));
-  if(previous.leader!==next.find(p=>p.leader_id)?.leader_id&&next.some(p=>p.leader_id===me))document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'leader',username:'You'}}));
+ const nextParty=next[0]?.party_id||null;
+ const oldMembers=previous?.members||[];
+ const oldIds=new Set(oldMembers.map(p=>p.user_id));
+ const newIds=new Set(next.map(p=>p.user_id));
+ // A stable party ID is ideal. When the view does not expose it, compare
+ // overlapping member IDs instead of using the changing member list as an ID.
+ const sameParty=!!previous&&!!next.length&&!!oldMembers.length&&(
+  (nextParty&&previous.party&&nextParty===previous.party)||
+  (!nextParty&&!previous.party&&next.some(p=>oldIds.has(p.user_id)))
+ );
+ if(sameParty){
+  for(const p of next){
+   if(!oldIds.has(p.user_id)){
+    document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:p.user_id===me?'join-self':'join',username:p.username||'Player'}}));
+   }
+  }
+  for(const p of oldMembers){
+   if(!newIds.has(p.user_id)){
+    document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:p.user_id===me?'leave-self':'leave',username:p.username||'Player'}}));
+   }
+  }
+  const newLeader=next.find(p=>p.leader_id)?.leader_id||null;
+  if(previous.leader!==newLeader){
+   const promoted=next.find(p=>p.user_id===newLeader);
+   document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:newLeader===me?'leader':'leader-changed',username:promoted?.username||'Player'}}));
+  }
+ }else if(previous){
+  if(oldIds.has(me)&&!newIds.has(me)){
+   document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'leave-self',username:'You'}}));
+  }else if(!oldIds.has(me)&&newIds.has(me)&&oldMembers.length){
+   document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'join-self',username:'You'}}));
+  }
  }
- if(previous&&previous.party!==nextParty){if(previous.party&&!nextParty)document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'leave-self',username:'You'}}));else if(nextParty&&previous.party)document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'join-self',username:'You'}}));}
  lastPartySnapshot={party:nextParty,members:next.map(p=>({user_id:p.user_id,username:p.username})),leader:next.find(p=>p.leader_id)?.leader_id||null};
  rows=next;const key=JSON.stringify({me,rows:rows.map(p=>[p.party_id,p.user_id,p.leader_id,p.username,p.player_level]),selectedMember});if(key!==lastRenderedKey){lastRenderedKey=key;render();document.dispatchEvent(new CustomEvent('sf:party-update',{detail:{members:rows,leader:rows.find(p=>p.leader_id)?.leader_id||null}}));}}finally{loading=false;if(queued){queued=false;void load();}}};
  const open=async()=>{if(opened||trigger.hidden)return;opened=true;focus=document.activeElement;layer.hidden=false;requestAnimationFrame(()=>layer.classList.add('open'));layer.querySelector('[data-close]').focus();await load()};
