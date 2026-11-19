@@ -60,6 +60,31 @@ function applyVisualSettings(settings=readSettings()){
 }
 window.addEventListener('skyfront:settings-changed',e=>applyVisualSettings(e.detail));
 applyVisualSettings();
+// Lightweight real FPS counter; updates twice per second without rerendering the UI.
+const fpsIndicator=document.createElement('div');
+fpsIndicator.id='sf-fps-counter';
+fpsIndicator.setAttribute('aria-label','Frames per second');
+fpsIndicator.hidden=!readSettings().showFps;
+fpsIndicator.textContent='-- FPS';
+document.body.appendChild(fpsIndicator);
+let fpsFrames=0,fpsWindowStart=0;
+function sampleFps(now){
+ if(!document.hidden&&readSettings().showFps){
+  if(!fpsWindowStart)fpsWindowStart=now;
+  fpsFrames++;
+  if(now-fpsWindowStart>=500){
+   fpsIndicator.textContent=Math.round(fpsFrames*1000/(now-fpsWindowStart))+' FPS';
+   fpsFrames=0;fpsWindowStart=now;
+  }
+ }else{fpsFrames=0;fpsWindowStart=0;}
+ requestAnimationFrame(sampleFps);
+}
+requestAnimationFrame(sampleFps);
+document.addEventListener('visibilitychange',()=>{fpsFrames=0;fpsWindowStart=0;});
+window.addEventListener('skyfront:settings-changed',e=>{
+ fpsIndicator.hidden=!e.detail.showFps;
+ if(!e.detail.showFps){fpsFrames=0;fpsWindowStart=0;}
+});
 installAuthGate();
 installAccountMenu();
 installFriends();
