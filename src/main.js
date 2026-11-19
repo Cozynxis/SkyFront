@@ -9,7 +9,8 @@ const pages = [
   {id:'battlepass',label:'BATTLE PASS',icon:'star',colors:['#b46b9f','#663a85','#291c57'],bar:'#693d83'},
   {id:'quests',label:'QUESTS',icon:'flag',colors:['#6baf87','#31716b','#173c52'],bar:'#306b63'},
   {id:'compete',label:'COMPETE',icon:'trophy',colors:['#b27e5c','#82536a','#3e3159'],bar:'#865367'},
-  {id:'career',label:'CAREER',icon:'chart',colors:['#6f7da8','#3d487c','#20264f'],bar:'#394b7c'}
+  {id:'career',label:'CAREER',icon:'chart',colors:['#6f7da8','#3d487c','#20264f'],bar:'#394b7c'},
+  {id:'community',label:'COMMUNITY',icon:'users',colors:['#b83f56','#85283e','#36172e'],bar:'#762a42'}
 ];
 const svg = (paths) => '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
 const icons = {
@@ -19,7 +20,8 @@ const icons = {
   star:svg('<path d="m12 2 3 6 7 .9-5 4.9 1.3 7L12 17.5 5.7 20.8l1.3-7L2 8.9 9 8l3-6Z"/>'),
   flag:svg('<path d="M5 22V3m0 1c5-4 9 4 15 0v12c-6 4-10-4-15 0"/>'),
   trophy:svg('<path d="M7 3h10v8a5 5 0 0 1-10 0V3Zm0 2H4v3a4 4 0 0 0 3 4m10-7h3v3a4 4 0 0 1-3 4m-5 4v4m-5 1h10"/>'),
-  chart:svg('<path d="M4 20V4m0 16h16M8 15l4-5 3 2 5-7"/>')
+  chart:svg('<path d="M4 20V4m0 16h16M8 15l4-5 3 2 5-7"/>'),
+  users:svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>')
 };
 const logoUrl = import.meta.env.BASE_URL + 'images/skyfront-logo.png';
 let selectedTeam='SOLO';
@@ -52,6 +54,7 @@ function soonMarkup(p){
   return `<div class="soon-layout"><div class="mascot" aria-hidden="true"><div class="mascot-shadow"></div><div class="mascot-body"><div class="mascot-eye eye-left"></div><div class="mascot-eye eye-right"></div><div class="mascot-mouth"></div><div class="mascot-cheek cheek-left"></div><div class="mascot-cheek cheek-right"></div></div><div class="mascot-arm arm-left"></div><div class="mascot-arm arm-right"></div><div class="mascot-foot foot-left"></div><div class="mascot-foot foot-right"></div><span class="mascot-question">?</span></div><div class="soon-eyebrow">${p.label} / UNDER CONSTRUCTION</div><h1>NOT HERE <em>YET!</em></h1><p>This page doesn't exist yet. Our little friend is working on it.</p><button class="back-button" type="button" id="back-home">← BACK TO LOBBY</button></div>`;
 }
 function setPage(id){
+ if(id===current && stage.childElementCount)return;
  pageEvents.abort();pageEvents=new AbortController();
  const p=pages.find(x=>x.id===id)||pages[0];current=p.id;
  document.body.classList.toggle('locker-page',p.id==='locker');
