@@ -19,7 +19,7 @@ export function installParty(){
  };
  const load=async()=>{const {data:{user}}=await supabase.auth.getUser();if(user?.id!==me){me=user?.id||null;rows=[];lastPartySnapshot=null;selectedMember=null;}if(!me){render();return;}const {data,error}=await supabase.rpc('sf_party_view');if(error){if(opened)notice(error.message,true);return;}const next=data||[];
  const previous=lastPartySnapshot;
- const nextParty=next[0]?.party_id||next[0]?.id||null;
+ const nextParty=next[0]?.party_id||next[0]?.leader_id||null;
  if(previous&&previous.party===nextParty&&nextParty){
   const before=new Map(previous.members.map(p=>[p.user_id,p]));
   const after=new Map(next.map(p=>[p.user_id,p]));
