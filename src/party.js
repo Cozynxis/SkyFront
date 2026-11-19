@@ -20,15 +20,11 @@ export function installParty(){
   const selected=owner?rows.find(p=>String(p.user_id)===String(selectedMember)&&String(p.user_id)!==String(me)):null;
   detail.hidden=!selected;
   if(selected){
-   const online=selected.last_seen_at&&Date.now()-new Date(selected.last_seen_at).getTime()<90000;
-   detail.innerHTML='<header><div><small>SKYFRONT · SQUAD CONTROL</small><h2>PLAYER OPTIONS</h2></div><button type="button" data-detail-close aria-label="Close player options">×</button></header>'
-    +'<div class="sf-party-detail-body"><div class="sf-party-detail-avatar">'+safe(selected.username?.[0]?.toUpperCase()||'?')+'</div>'
-    +'<strong>'+safe(selected.username||'Player')+'</strong><small><span class="sf-party-status-dot '+(online?'online':'')+'"></span> '+safe(ago(selected.last_seen_at))+' · LEVEL '+Number(selected.player_level||1)+'</small>'
-    +'<div class="sf-party-detail-stats"><div><span>ROLE</span><b>MEMBER</b></div><div><span>PARTY</span><b>'+rows.length+' / 4</b></div></div>'
-    +'<div class="sf-party-detail-actions"><p>LEADER CONTROLS</p><button type="button" data-action="promote" data-target="'+safe(selected.user_id)+'">♛ PROMOTE TO LEADER <span>›</span></button>'
-    +'<button type="button" class="danger" data-action="kick" data-target="'+safe(selected.user_id)+'">✕ REMOVE FROM PARTY <span>›</span></button>'
-    +'<p>PLAYER TOOLS</p><button type="button" data-action="copy-name" data-target="'+safe(selected.user_id)+'">⧉ COPY USERNAME <span>›</span></button>'
-    +'<button type="button" data-action="friends">♧ OPEN FRIENDS LIST <span>›</span></button></div></div>';
+   const online=!!(selected.last_seen_at&&Date.now()-new Date(selected.last_seen_at).getTime()<90000);
+   detail.innerHTML='<header><div><small>PARTY MANAGEMENT</small><h2>MANAGE PLAYER</h2></div><button type="button" data-detail-close aria-label="Close player options">×</button></header>'
+    +'<div class="sf-party-detail-body"><div class="sf-party-detail-identity"><div class="sf-party-detail-avatar">'+safe(selected.username?.[0]?.toUpperCase()||'?')+'</div><div class="sf-party-detail-name"><strong>'+safe(selected.username||'Player')+'</strong><small><span class="sf-party-status-dot '+(online?'online':'')+'"></span> '+safe(ago(selected.last_seen_at))+' · LVL '+Number(selected.player_level||1)+'</small></div></div>'
+    +'<div class="sf-party-detail-actions"><button type="button" data-action="promote" data-target="'+safe(selected.user_id)+'"><span>👑</span><b>PROMOTE TO LEADER</b><span>›</span></button>'
+    +'<button type="button" class="danger" data-action="kick" data-target="'+safe(selected.user_id)+'"><span>✕</span><b>KICK FROM PARTY</b><span>›</span></button></div></div>';
   }
 
   layer.querySelector('.sf-party-actions').innerHTML='<p>'+rows.length+' / 4 PLAYERS</p>'+(owner?'<button type="button" data-action="friends" class="primary">INVITE FRIENDS</button>':'')+'<button type="button" data-action="leave">LEAVE PARTY</button>';
