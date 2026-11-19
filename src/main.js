@@ -5,6 +5,7 @@ import { installAudio } from './audio.js';
 import { mountCareer } from './career.js';
 import { mountCommunity } from './community.js';
 import { installAuthGate } from './auth.js';
+import { supabase } from './community.js';
 import './style.css';
 
 const pages = [
@@ -43,13 +44,24 @@ app.innerHTML = `
   <div class="shell">
     <header class="topbar">
       <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="SKYFRONT logo"><span>SKYFRONT<small class="alpha-version">Alpha V1.0.0</small></span></div>
-      <div class="top-right"><div class="wallet" aria-label="S coins balance"><span class="sf-coin-mark" aria-hidden="true">S</span><strong id="wallet-balance">100,000</strong></div><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
+      <div class="top-right"><div class="wallet" aria-label="S coins balance"><span class="sf-coin-mark" aria-hidden="true">S</span><strong id="wallet-balance">100,000</strong></div><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span id="sf-profile-name">PLAYER ONE<small>LEVEL 1</small></span></span><button id="sf-signout" type="button" title="Sign out of SKYFRONT" aria-label="Sign out of SKYFRONT">LOG OUT</button></div>
     </header>
     <div class="shop-top-nav" id="shop-top-nav" aria-label="Shop quick navigation"></div>
     <main class="stage" id="stage" aria-live="polite"></main>
     <footer class="bottom-area"><nav class="dock" aria-label="Main navigation"></nav></footer>
   </div>`;
 installAuthGate();
+app.querySelector('#sf-signout').addEventListener('click',async ()=>{
+  const button=app.querySelector('#sf-signout');
+  button.disabled=true;
+  const {error}=await supabase.auth.signOut();
+  button.disabled=false;
+  if(error)window.alert('Could not sign out: '+error.message);
+});
+supabase.auth.onAuthStateChange((_event,session)=>{
+  const label=app.querySelector('#sf-profile-name');
+  if(label)label.innerHTML=(session?.user?.email?.split('@')[0]||'PLAYER ONE').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))+'<small>LEVEL 1</small>';
+});
 const stage=app.querySelector('#stage');
 const dock=app.querySelector('.dock');
 const shopTopNav=app.querySelector('#shop-top-nav');
