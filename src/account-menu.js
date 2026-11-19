@@ -21,7 +21,7 @@ export function installAccountMenu(){
  const updateSkin=()=>{const art=getEquippedSkinArt();for(const el of [trigger.querySelector('.sf-profile-skin'),layer.querySelector('.sf-drawer-skin')])el.innerHTML=art;trigger.title=getEquippedSkinName()+' · Account menu'};
  const updateProfile=async()=>{
   const {data}=await supabase.auth.getUser();const user=data?.user;
-  const name=user?.user_metadata?.username||localStorage.getItem('sf-player-name')||user?.email?.split('@')[0]||'PLAYER';
+  const name=user?.user_metadata?.username||localStorage.getItem('sf-player-name')||'PLAYER';
   layer.querySelector('.sf-drawer-username').textContent=name;
   layer.querySelector('.sf-drawer-email').textContent=user?.email||'';
   const header=document.querySelector('#sf-profile-name');
@@ -40,7 +40,7 @@ export function installAccountMenu(){
  layer.querySelector('[data-account]').onclick=async()=>{
   const {data}=await supabase.auth.getUser(),user=data?.user;
   if(!user)return;
-  const name=user.user_metadata?.username||localStorage.getItem('sf-player-name')||user.email.split('@')[0];
+  const name=user.user_metadata?.username||localStorage.getItem('sf-player-name')||'PLAYER';
   dialog('MY ACCOUNT',`<div class="sf-account-fields"><form data-form="username"><label>DISPLAY NAME<input name="username" maxlength="24" minlength="3" required value="${esc(name)}" autocomplete="nickname"></label><button type="submit">SAVE USERNAME</button><p role="status"></p></form><form data-form="email"><label>EMAIL ADDRESS<input type="email" name="email" required value="${esc(user.email)}" autocomplete="email"></label><button type="submit">UPDATE EMAIL</button><p role="status"></p></form><form data-form="password"><label>NEW PASSWORD<input type="password" name="password" minlength="8" required autocomplete="new-password" placeholder="At least 8 characters"></label><label>CONFIRM NEW PASSWORD<input type="password" name="confirm" minlength="8" required autocomplete="new-password"></label><button type="submit">CHANGE PASSWORD</button><p role="status"></p></form></div>`);
   for(const form of host.querySelectorAll('form'))form.onsubmit=async e=>{
    e.preventDefault();const button=form.querySelector('button'),msg=form.querySelector('p'),type=form.dataset.form;button.disabled=true;msg.textContent='Saving…';
