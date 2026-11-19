@@ -30,11 +30,11 @@ app.innerHTML = `
   <div class="background" aria-hidden="true"><div class="light light-a"></div><div class="light light-b"></div><div class="horizon"></div><div class="grid-floor"></div></div>
   <div class="shell">
     <header class="topbar">
-      <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="SKYFRONT logo"><span>SKYFRONT<small>PRE-ALPHA</small></span></div>
-      <div class="top-right"><span class="status"><i></i> ONLINE PREVIEW</span><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
+      <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="SKYFRONT logo"><span>SKYFRONT<small class="alpha-version">Alpha V1.0.0</small></span></div>
+      <div class="top-right"><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
     </header>
     <main class="stage" id="stage" aria-live="polite"></main>
-    <footer class="bottom-area"><div class="bottom-info"><span>SKYFRONT <span class="dot">•</span> WEB EDITION</span><span>EARLY ACCESS PREVIEW</span></div><nav class="dock" aria-label="Main navigation"></nav></footer>
+    <footer class="bottom-area"><nav class="dock" aria-label="Main navigation"></nav></footer>
   </div>`;
 const stage=app.querySelector('#stage');
 const dock=app.querySelector('.dock');
