@@ -43,3 +43,11 @@
 @keyframes sfInspectEnter{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:780px){.shop-inspector{grid-template-columns:1fr!important;grid-template-rows:minmax(190px,42%) minmax(0,58%)!important;overflow:auto!important}.shop-inspect-art{grid-column:1;grid-row:1}.shop-inspect-info{grid-column:1;grid-row:2;justify-content:flex-start;padding:24px!important;gap:8px}.shop-inspect-top{position:fixed;left:16px;right:16px;top:14px}.shop-inspect-info h2{font-size:clamp(40px,9vw,65px)!important}.shop-inspect-info p{margin:4px 0}.shop-inspect-price{margin:6px 0!important}.shop-inspect-art .shop-art-symbol{font-size:clamp(130px,35vw,260px)!important}}
 @media(max-height:650px) and (min-width:781px){.shop-inspect-info{gap:6px}.shop-inspect-info h2{font-size:clamp(42px,5vw,76px)!important}.shop-inspect-info p{margin:3px 0}.shop-inspect-price{margin:5px 0!important}.shop-buy{padding:10px!important}.shop-back{padding:10px}}
+
+/* Quick polished inspect exit: fade, gentle shrink and slide */
+.shop-modal.shop-is-closing{pointer-events:none}
+.shop-modal.shop-is-closing .shop-inspector{animation:sfInspectExit 220ms cubic-bezier(.4,0,1,1) both!important}
+.shop-modal.shop-is-closing .shop-inspect-art .shop-art-symbol{animation:sfInspectArtExit 220ms ease-in both!important}
+@keyframes sfInspectExit{0%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}100%{opacity:0;transform:translateY(16px) scale(.985);filter:blur(3px)}}
+@keyframes sfInspectArtExit{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:.4;transform:translateX(25px) scale(.94)}}
+@media(prefers-reduced-motion:reduce){.shop-modal.shop-is-closing .shop-inspector,.shop-modal.shop-is-closing .shop-inspect-art .shop-art-symbol{animation:none!important}}
