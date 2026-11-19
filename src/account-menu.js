@@ -1,3 +1,4 @@
+import {canManageLobbyNews,openLobbyNewsAdmin} from './lobby-news.js';
 import {readSettings,updateSettings} from './audio.js';
 import './settings.css';
 import { supabase } from './community.js';
@@ -16,7 +17,7 @@ export function installAccountMenu(){
  top.appendChild(trigger);
  const layer=document.createElement('div');
  layer.className='sf-account-layer';layer.hidden=true;
- layer.innerHTML='<div class="sf-account-shade"></div><aside class="sf-account-drawer" role="dialog" aria-modal="true" aria-label="Account menu"><div class="sf-drawer-head"><span>SKYFRONT / MENU</span><button type="button" data-close aria-label="Close menu">×</button></div><div class="sf-drawer-profile"><div class="sf-drawer-skin"></div><div><strong class="sf-drawer-username">PLAYER</strong><small class="sf-drawer-email"></small></div></div><div class="sf-drawer-links"><button type="button" data-account>◉ <span>ACCOUNT<small>Manage your profile and security</small></span><b>›</b></button><button type="button" data-settings>⚙ <span>SETTINGS<small>Preferences and controls</small></span><b>›</b></button></div><button class="sf-drawer-logout" type="button" data-logout>↪ LOG OUT</button></aside><div class="sf-account-modal-host"></div>';
+ layer.innerHTML='<div class="sf-account-shade"></div><aside class="sf-account-drawer" role="dialog" aria-modal="true" aria-label="Account menu"><div class="sf-drawer-head"><span>SKYFRONT / MENU</span><button type="button" data-close aria-label="Close menu">×</button></div><div class="sf-drawer-profile"><div class="sf-drawer-skin"></div><div><strong class="sf-drawer-username">PLAYER</strong><small class="sf-drawer-email"></small></div></div><div class="sf-drawer-links"><button type="button" data-account>◉ <span>ACCOUNT<small>Manage your profile and security</small></span><b>›</b></button><button type="button" data-settings>⚙ <span>SETTINGS<small>Preferences and controls</small></span><b>›</b></button></div><button class="sf-drawer-admin" type="button" data-admin-panel hidden>✦ <span>ADMIN PANEL</span><b>›</b></button><button class="sf-drawer-logout" type="button" data-logout>↪ LOG OUT</button></aside><div class="sf-account-modal-host"></div>';
  document.body.appendChild(layer);
  let dialogClosing=false;
  const dismissDialog=()=>{if(dialogClosing||!host.childElementCount)return;dialogClosing=true;const overlay=host.querySelector('.sf-account-dialog-shade');overlay?.classList.add('sf-dialog-closing');setTimeout(()=>{host.replaceChildren();dialogClosing=false;if(opened)drawer.querySelector('[data-settings]')?.focus()},145)};
@@ -24,6 +25,7 @@ export function installAccountMenu(){
  let opened=false,previousFocus=null;
  const updateSkin=()=>{const art=getEquippedSkinArt();for(const el of [trigger.querySelector('.sf-profile-skin'),layer.querySelector('.sf-drawer-skin')])el.innerHTML=art;trigger.title=getEquippedSkinName()+' · Account menu'};
  const updateProfile=async()=>{
+  layer.querySelector('[data-admin-panel]').hidden=!(await canManageLobbyNews());
   const {data}=await supabase.auth.getUser();const user=data?.user;
   const name=user?.user_metadata?.username||'PLAYER';
   layer.querySelector('.sf-drawer-username').textContent=name;
@@ -42,6 +44,7 @@ export function installAccountMenu(){
   host.querySelector('.sf-account-dialog-shade').onclick=e=>{if(e.target===e.currentTarget)dismissDialog()};
   host.querySelector('input,button')?.focus();
  }
+ layer.querySelector('[data-admin-panel]').onclick=async()=>{if(await openLobbyNewsAdmin())close()};
  layer.querySelector('[data-account]').onclick=async()=>{
   const {data}=await supabase.auth.getUser(),user=data?.user;
   if(!user)return;
