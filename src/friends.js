@@ -12,7 +12,7 @@ export function installFriends(){
  const toast=document.createElement('div');toast.className='sf-social-toast';toast.hidden=true;toast.setAttribute('role','status');document.body.append(toast);
  const notificationSound=new Audio(import.meta.env.BASE_URL+'audio/Notification.mp3');notificationSound.volume=.65;
  let notificationTimer=null,toastTimer=null,knownIncoming=null,channel=null,profileOpen=false,toastQueue=[],toastBusy=false,activeToast=null;
- let presenceChannel=null,presenceUser=null,liveOnline=new Set(),presenceReady=false;let lastSyncedUser=null,lastSyncedName=null;let opened=false,tab='friends',me=null,requests=[],blocks=[],invites=[],profiles=new Map(),timer=null,busy=false,previousFocus=null;
+ let presenceChannel=null,presenceUser=null,liveOnline=new Set(),presenceReady=false;const inviteCooldown=new Map();const INVITE_COOLDOWN_MS=10000;let lastSyncedUser=null,lastSyncedName=null;let opened=false,tab='friends',me=null,requests=[],blocks=[],invites=[],profiles=new Map(),timer=null,busy=false,previousFocus=null;
  const hideToast=()=>{clearTimeout(toastTimer);toast.classList.remove('visible');setTimeout(()=>{if(!toast.classList.contains('visible')){toast.hidden=true;toastBusy=false;activeToast=null;showNextToast();}},220);};
  const showNextToast=()=>{if(toastBusy||!toastQueue.length)return;toastBusy=true;activeToast=toastQueue.shift();const n=activeToast;const senderName=getName(n.sender);const isParty=n.type==='party';
  toast.innerHTML='<div class="sf-social-toast-head"><span class="sf-social-toast-symbol">'+(isParty?'♛':'♧')+'</span><div class="sf-social-toast-copy"><small>SKYFRONT • '+(isParty?'PARTY INVITE':'FRIEND REQUEST')+'</small><strong>'+esc(senderName)+'</strong><span>'+(isParty?'invited you to their party':'wants to add you as a friend')+'</span></div><button type="button" data-toast-dismiss aria-label="Dismiss notification">×</button></div><div class="sf-social-toast-actions"><button type="button" data-toast-accept>ACCEPT</button><button type="button" data-toast-decline>DECLINE</button></div><div class="sf-social-toast-progress"></div>';
@@ -67,7 +67,7 @@ export function installFriends(){
    if(opened)render();
  }
  function row(id,subtitle,actions){
-   const p=profiles.get(id);const status=isOnline(id)?'online':'offline';return '<article class="sf-friend-row"><span class="sf-friend-avatar">'+esc(getName(id).slice(0,1).toUpperCase())+'<i class="sf-presence-dot '+status+'"></i></span><button type="button" class="sf-friend-identity" data-profile="'+esc(id)+'"><strong>'+esc(getName(id))+'</strong><small>'+esc(subtitle)+' · '+(isOnline(id)?'ONLINE':'OFFLINE')+'</small></button><div class="sf-friend-actions">'+actions.map(([action,label])=>'<button type="button" data-action="'+action+'" data-user="'+esc(id)+'">'+esc(label)+'</button>').join('')+'</div></article>';
+   const p=profiles.get(id);const status=isOnline(id)?'online':'offline';return '<article class="sf-friend-row"><span class="sf-friend-avatar">'+esc(getName(id).slice(0,1).toUpperCase())+'<i class="sf-presence-dot '+status+'"></i></span><button type="button" class="sf-friend-identity" data-profile="'+esc(id)+'"><strong>'+esc(getName(id))+'</strong><small>'+esc(subtitle)+' · '+(isOnline(id)?'ONLINE':'OFFLINE')+'</small></button><div class="sf-friend-actions">'+actions.map(([action,label])=>'<button type="button" data-action="'+action+'" data-user="'+esc(id)+'">'+esc(action==='invite'&&Date.now()-(inviteCooldown.get(id)||0)<INVITE_COOLDOWN_MS?'WAIT '+Math.ceil((INVITE_COOLDOWN_MS-(Date.now()-inviteCooldown.get(id)))/1000)+'S':label)+'</button>').join('')+'</div></article>';
  }
  function render(){
    layer.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -94,13 +94,16 @@ export function installFriends(){
  layer.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
  layer.querySelector('#sf-friend-add').onsubmit=async e=>{e.preventDefault();if(busy)return;busy=true;const input=e.currentTarget.elements.username;try{await rpc('request',input.value.trim());input.value='';notice('Friend request sent!');await load()}catch(err){notice(err.message,true)}finally{busy=false}};
  list.onclick=async e=>{const profile=e.target.closest('[data-profile]');if(profile){profilePopup.dataset.user=profile.dataset.profile;openProfile(profile.dataset.profile);return;}const b=e.target.closest('[data-action]');if(!b||busy)return;busy=true;b.disabled=true;const action=b.dataset.action,id=b.dataset.user;try{
-   if(action==='invite'&&!window.confirm('Invite '+getName(id)+' to your party?'))return;
-   if(action==='accept_invite'&&!window.confirm('Accept party invite from '+getName(id)+'?'))return;
+   if(action==='invite'){
+     const remaining=INVITE_COOLDOWN_MS-(Date.now()-(inviteCooldown.get(id)||0));
+     if(remaining>0){notice('Wait '+Math.ceil(remaining/1000)+'s before inviting this player again.',true);return;}
+   }
    if(action==='block'||action==='unblock')await blockRpc(id,action==='block');
    else await rpc(action,id);
+   if(action==='invite'){inviteCooldown.set(id,Date.now());const inviteButton=b;inviteButton.disabled=true;let seconds=10;inviteButton.textContent='WAIT '+seconds+'S';const countdown=setInterval(()=>{seconds=Math.max(0,Math.ceil((INVITE_COOLDOWN_MS-(Date.now()-(inviteCooldown.get(id)||0)))/1000));if(!inviteButton.isConnected){clearInterval(countdown);return;}if(seconds===0){clearInterval(countdown);inviteButton.disabled=false;inviteButton.textContent='INVITE';}else inviteButton.textContent='WAIT '+seconds+'S';},250);}
    notice(action==='invite'?'Party invitation sent!':action==='accept_invite'?'Invitation accepted. Party matchmaking will be available when multiplayer launches.':'Updated successfully.');
    await load();
- }catch(err){notice(err.message,true)}finally{busy=false;b.disabled=false}};
+ }catch(err){notice(err.message,true)}finally{busy=false;b.disabled=action==='invite'&&Date.now()-(inviteCooldown.get(id)||0)<INVITE_COOLDOWN_MS}};
  const refresh=()=>{load().catch(()=>{})};refresh();timer=setInterval(refresh,12000);notificationTimer=setInterval(()=>{void heartbeat().catch(()=>{});},25000);
  const visibilityHandler=()=>{void trackPresence();if(!document.hidden){void heartbeat().catch(()=>{});refresh();}};
  document.addEventListener('visibilitychange',visibilityHandler);window.addEventListener('focus',visibilityHandler);window.addEventListener('blur',visibilityHandler);
