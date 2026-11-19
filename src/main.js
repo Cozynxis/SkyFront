@@ -54,6 +54,7 @@ function soonMarkup(p){
 function setPage(id){
  pageEvents.abort();pageEvents=new AbortController();
  const p=pages.find(x=>x.id===id)||pages[0];current=p.id;
+ document.body.classList.toggle('locker-page',p.id==='locker');
  const root=document.documentElement;
  p.colors.forEach((color,i)=>root.style.setProperty('--bg'+(i+1),color));
  root.style.setProperty('--dock',p.bar);
