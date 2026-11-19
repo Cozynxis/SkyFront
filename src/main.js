@@ -1,3 +1,4 @@
+import { installAudio } from './audio.js';
 import './style.css';
 
 const pages = [
@@ -37,7 +38,7 @@ dock.innerHTML=pages.map(p=>`<button class="nav-item" type="button" data-page="$
 dock.addEventListener('click',e=>{const btn=e.target.closest('[data-page]');if(btn) setPage(btn.dataset.page);});
 function playMarkup(){
   return `<div class="play-layout">
-    <section class="game-panel"><div class="panel-eyebrow"><span class="pulse-dot"></span> THE LOBBY</div><h1>READY FOR<br><em>WHAT'S NEXT?</em></h1><p>Welcome to SKYFRONT. Your next adventure is on its way.</p><div class="mode-card"><div><small>SELECTED MODE</small><strong>COMING SOON</strong></div><span class="mode-icon">✦</span></div><button class="primary-button" type="button" disabled>PLAY <span>SOON</span></button><div class="panel-foot">GAME MODES ARE IN DEVELOPMENT</div></section>
+    <section class="game-panel"><div class="panel-eyebrow"><span class="pulse-dot"></span> THE LOBBY</div><h1>READY FOR<br><em>WHAT'S NEXT?</em></h1><p>Welcome to SKYFRONT. Your next adventure is on its way.</p><div class="mode-card"><div><small>SELECTED MODE</small><strong>COMING SOON</strong></div><span class="mode-icon">✦</span></div><button class="primary-button" id="start-play" type="button">PLAY <span>SOON</span></button><div class="panel-foot">GAME MODES ARE IN DEVELOPMENT</div></section>
     <div class="center-space" aria-hidden="true"><div class="platform platform-back"></div><div class="platform platform-main"></div><span class="center-caption">YOUR LOBBY. YOUR WAY.</span></div>
     <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to the new lobby <span>↗</span></div></aside>
   </div>`;
@@ -56,4 +57,5 @@ function setPage(id){
  stage.querySelector('#back-home')?.addEventListener('click',()=>setPage('play'));
  document.title='SKYFRONT — '+p.label;
 }
+installAudio();
 setPage('play');
