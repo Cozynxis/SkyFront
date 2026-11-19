@@ -1,3 +1,5 @@
+import {readSettings,updateSettings} from './audio.js';
+import './settings.css';
 import { supabase } from './community.js';
 import { getEquippedSkinArt, getEquippedSkinName } from './locker.js';
 import './account-menu.css';
@@ -56,7 +58,23 @@ export function installAccountMenu(){
    }catch(err){msg.textContent=err.message||'Unable to save changes.'}finally{button.disabled=false}
   };
  };
- layer.querySelector('[data-settings]').onclick=()=>dialog('SETTINGS','<div class="sf-settings-placeholder"><h3>SETTINGS COMING SOON</h3><p>Audio, graphics and gameplay preferences will appear here.</p></div>');
+ layer.querySelector('[data-settings]').onclick=()=>{
+  dialog('SETTINGS','<div class="sf-settings-layout"><nav class="sf-settings-tabs" aria-label="Settings categories"><button type="button" class="active" data-settings-tab="audio">🔊 <span>AUDIO</span></button><button type="button" data-settings-tab="graphics">▣ <span>GRAPHICS</span></button><button type="button" data-settings-tab="keybinds">⌨ <span>KEYBINDS</span></button></nav><div class="sf-settings-content" id="sf-settings-content"></div></div>');
+  const area=host.querySelector('#sf-settings-content'),tabs=host.querySelector('.sf-settings-tabs');
+  const range=(key,label,description)=>{const v=readSettings()[key];return '<label class="sf-settings-field"><span><b>'+label+'</b><small>'+description+'</small></span><div class="sf-settings-range"><input type="range" min="0" max="100" step="1" data-setting="'+key+'" value="'+v+'"><output data-output="'+key+'">'+v+'%</output></div></label>'};
+  const toggle=(key,label,description)=>'<label class="sf-settings-field sf-settings-switch"><span><b>'+label+'</b><small>'+description+'</small></span><input type="checkbox" data-setting="'+key+'" '+(readSettings()[key]?'checked':'')+'></label>';
+  const select=(key,label,description,options)=>'<label class="sf-settings-field"><span><b>'+label+'</b><small>'+description+'</small></span><select data-setting="'+key+'">'+options.map(([v,t])=>'<option value="'+v+'" '+(String(readSettings()[key])===String(v)?'selected':'')+'>'+t+'</option>').join('')+'</select></label>';
+  const show=tab=>{
+   tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.settingsTab===tab));
+   if(tab==='audio')area.innerHTML='<h3>AUDIO SETTINGS</h3><p>Customize how SKYFRONT sounds.</p>'+range('music','LOBBY MUSIC','Adjust the background music volume in real time.')+range('effects','SOUND EFFECTS','UI clicks, hover and menu effects.')+toggle('notifications','NOTIFICATION SOUNDS','Enable or mute party notification sounds.')+range('notificationVolume','NOTIFICATION VOLUME','Volume of party notification sounds.');
+   else if(tab==='graphics')area.innerHTML='<h3>GRAPHICS SETTINGS</h3><p>Choose how the menus look and prepare your gameplay preferences.</p>'+select('quality','VISUAL QUALITY','Adjust menu effects and background detail.',[['low','LOW'],['medium','MEDIUM'],['high','HIGH']])+toggle('animations','UI ANIMATIONS','Enable transitions and animated backgrounds.')+select('fps','TARGET FPS','Saved for gameplay; browser display refresh rate is controlled by the device.',[[30,'30 FPS'],[60,'60 FPS'],[120,'120 FPS'],[144,'144 FPS'],[240,'240 FPS']]);
+   else area.innerHTML='<div class="sf-settings-coming"><span>⌨</span><h3>KEYBINDS</h3><p>Custom keyboard controls will be available when SKYFRONT gameplay is ready.</p><strong>COMING SOON</strong></div>';
+  };
+  tabs.addEventListener('click',e=>{const b=e.target.closest('[data-settings-tab]');if(b)show(b.dataset.settingsTab)});
+  area.addEventListener('input',e=>{const el=e.target.closest('[data-setting]');if(!el)return;const value=el.type==='checkbox'?el.checked:el.type==='range'?Number(el.value):el.value;updateSettings({[el.dataset.setting]:value});const output=area.querySelector('[data-output="'+el.dataset.setting+'"]');if(output)output.textContent=value+'%'});
+  area.addEventListener('change',e=>{const el=e.target.closest('[data-setting]');if(el)updateSettings({[el.dataset.setting]:el.type==='checkbox'?el.checked:el.value})});
+  show('audio');
+ };
  layer.querySelector('[data-logout]').onclick=async e=>{const b=e.currentTarget;b.disabled=true;const {error}=await supabase.auth.signOut();b.disabled=false;if(error){alert(error.message);return}close()};
  window.addEventListener('skyfront:cosmetic-changed',updateSkin);
  window.addEventListener('storage',e=>{if(e.key==='skyfront-locker-v1')updateSkin()});
