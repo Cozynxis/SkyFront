@@ -15,7 +15,7 @@ let section='you',view='overview',active='skin',selected=equipped.skin,search=''
 let favorites={};try{favorites=JSON.parse(localStorage.getItem('skyfront-locker-favorites')||'{}')||{}}catch{}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cat=()=>categories.find(c=>c.id===active);
-const save=()=>localStorage.setItem(key,JSON.stringify(equipped));
+const save=()=>{localStorage.setItem(key,JSON.stringify(equipped));window.dispatchEvent(new CustomEvent('skyfront:cosmetic-changed',{detail:{...equipped}}));};
 const favoriteKey=()=>active+':'+selected;
 const colors=['#217ad5','#763fd1','#1aabaf','#cc5c91','#5372cc','#2884a7','#b47737','#5d65b8','#178fa2','#7957b4','#257ab7','#af4b84'];
 const cosmeticArt=(category,item,index=0)=>{
@@ -32,6 +32,8 @@ const cosmeticArt=(category,item,index=0)=>{
  return `<svg class="sf-art-svg" viewBox="0 0 100 110" role="img" aria-label="${esc(item)}"><defs><radialGradient id="glow-${category}-${index}"><stop stop-color="${a}" stop-opacity=".38"/><stop offset="1" stop-color="${a}" stop-opacity="0"/></radialGradient></defs><ellipse cx="50" cy="55" rx="46" ry="51" fill="url(#glow-${category}-${index})"/>${item==='None'?'<path d="M22 25L78 85M78 25L22 85" stroke="#e7f7ff" stroke-width="11" stroke-linecap="round"/>':body}</svg>`;
 };
 
+export function getEquippedSkinArt(){const item=equipped.skin;return cosmeticArt('skin',item,Math.max(0,categories[0].items.indexOf(item)));}
+export function getEquippedSkinName(){return equipped.skin;}
 const emoteCatalog=[
  {id:'wave',name:'Wave',symbol:'👋',color:'#39c8ff'},
  {id:'dance',name:'Victory Dance',symbol:'✦',color:'#c78aff'},
