@@ -28,3 +28,23 @@
 .sf-party-member:not(:disabled) .sf-party-chevron{display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#ffffff1a;transition:transform .2s}
 .sf-party-member.selected .sf-party-chevron{transform:rotate(180deg)}
 .sf-party-submenu button:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* Floating player management panel, positioned beside the left party drawer. */
+.sf-party-detail[hidden]{display:none!important}
+.sf-party-detail{position:absolute;left:min(432px,calc(96vw + 12px));top:clamp(110px,19vh,220px);width:min(310px,calc(100vw - 455px));min-width:230px;max-height:calc(100dvh - 140px);overflow:auto;border:1px solid #9fc8ff65;border-radius:18px;background:linear-gradient(160deg,#234a93,#0c1c46 85%);box-shadow:0 18px 60px #0009;color:#fff;animation:sfPartyDetailIn .22s cubic-bezier(.2,.8,.2,1)}
+.sf-party-detail header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#ffffff12}
+.sf-party-detail header small{color:#a9cbff;font-size:10px;letter-spacing:.12em}
+.sf-party-detail h2{font:900 25px 'Barlow Condensed',Impact,sans-serif;margin:4px 0 0}
+.sf-party-detail [data-detail-close]{background:#ffffff24;color:white;border:1px solid #ffffff35;border-radius:9px;width:33px;height:33px;font-size:23px;cursor:pointer}
+.sf-party-detail-body{padding:22px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.sf-party-detail-avatar{display:grid;place-items:center;width:64px;height:64px;border-radius:17px;background:linear-gradient(135deg,#5cc4ff,#2851b6);font-size:30px;font-weight:900}
+.sf-party-detail-body>strong{font-size:19px}.sf-party-detail-body>small{font-size:11px;color:#b5d2ff}
+.sf-party-detail-actions{width:100%;display:grid;gap:10px;margin-top:15px}
+.sf-party-detail-actions button{padding:13px 10px;border-radius:10px;border:1px solid #a8c9ff75;background:#3b72c9;color:white;font-weight:900;font-size:11px;cursor:pointer;transition:background .18s,transform .18s}
+.sf-party-detail-actions button:hover{background:#508fe8;transform:translateY(-2px)}
+.sf-party-detail-actions button.danger{background:#6b2b4b;border-color:#ed7b98}.sf-party-detail-actions button.danger:hover{background:#b4395b}
+.sf-party-detail-actions button:disabled{opacity:.55;cursor:wait}
+.sf-party-member.selected{background:#ffffff25;box-shadow:inset 3px 0 #73d5ff}
+@keyframes sfPartyDetailIn{from{opacity:0;transform:translateX(-15px) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}
+@media(max-width:760px){.sf-party-detail{left:auto;right:12px;top:100px;width:min(300px,calc(100vw - 24px));min-width:0;z-index:2}.sf-party-panel{width:min(420px,96vw)}}
