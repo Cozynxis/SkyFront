@@ -52,3 +52,5 @@ body.sf-on-play .sf-friends-trigger:not([hidden]){display:flex}
 @keyframes sfToastCountdown{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @media(max-width:600px){.sf-social-toast{top:72px;right:14px}}
 @media(prefers-reduced-motion:reduce){.sf-social-toast{transition:none}.sf-social-toast-progress{animation:none}}
+
+.sf-friend-profile-details .sf-profile-flag{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:34px;line-height:1.35;font-weight:400;display:block;filter:drop-shadow(0 3px 4px #0005)}
