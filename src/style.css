@@ -115,3 +115,18 @@ body.locker-page .nav-item svg{width:18px;height:18px}
 @media(max-width:520px){.dock{grid-template-columns:repeat(8,minmax(0,1fr));width:100%;padding:4px 2px}.nav-item{min-height:50px;padding:7px 0}.nav-item svg{width:17px;height:17px}.nav-item span{font-size:6px;letter-spacing:0}}
 /* Keep the game interface within the available viewport on desktop */
 @media(min-width:851px){.shell{min-height:100dvh}.stage{min-height:0}.bottom-area{flex:0 0 auto}}
+
+/* SKYFRONT S Coins + shop-only compact header navigation */
+.sf-coin-mark{display:inline-grid;place-items:center;flex:0 0 auto;width:21px;height:21px;border-radius:50%;background:linear-gradient(145deg,#7beaff,#188ee5);border:2px solid #d4f7ff;color:#fff;font-family:'Barlow Condensed',Impact,sans-serif;font-size:17px;font-weight:900;font-style:italic;line-height:1;transform:skew(-7deg);text-shadow:0 1px 2px #075a9b;box-shadow:0 2px 8px #041c4b55}
+.wallet{display:flex;align-items:center;gap:9px;padding:9px 13px;border-radius:12px;background:#091d4b88;border:1px solid #ffffff36;white-space:nowrap}
+.wallet strong{font-size:13px;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.shop-top-nav{display:none}
+body.shop-page .topbar{position:relative;z-index:15;flex-wrap:wrap;gap:10px}
+body.shop-page .shop-top-nav{display:flex;position:sticky;top:0;z-index:18;align-items:center;justify-content:center;gap:3px;max-width:100%;margin:-47px auto 12px;padding:5px;border:1px solid #ffffff35;border-radius:12px;background:#10294acb;backdrop-filter:blur(18px);box-shadow:0 7px 20px #07162c55}
+.shop-nav-link{border:0;border-radius:8px;background:transparent;color:#d7eaff;padding:10px clamp(5px,.8vw,12px);font-size:clamp(9px,.75vw,11px);font-weight:900;white-space:nowrap;cursor:pointer;transition:background .2s,color .2s}
+.shop-nav-link:hover{background:#ffffff27}.shop-nav-link.active{background:#eef7ff;color:#15325b}
+body.shop-page .bottom-area{display:none}
+body.shop-page .shell{padding-bottom:12px}
+body.shop-page .stage{display:block;min-height:0}
+@media(max-width:1200px){body.shop-page .shop-top-nav{margin:12px auto 8px;width:max-content;max-width:100%;overflow-x:auto;justify-content:flex-start}}
+@media(max-width:700px){.wallet{padding:7px 9px;gap:5px}.wallet strong{font-size:11px}.top-right{gap:8px}body.shop-page .shop-top-nav{width:100%}.shop-nav-link{padding:8px 6px;font-size:9px}}
