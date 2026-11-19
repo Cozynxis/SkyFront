@@ -85,6 +85,8 @@ function setPage(id){
  document.title='SKYFRONT — '+p.label;
 }
 installAudio();
+const savedCoins=localStorage.getItem('sf-coins-balance');
+if(savedCoins!==null && Number.isFinite(Number(savedCoins))) document.querySelector('#wallet-balance').textContent=Number(savedCoins).toLocaleString('en-US');
 setPage('play');
 
 function initModeSelector(){
