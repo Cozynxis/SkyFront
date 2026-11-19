@@ -15,17 +15,25 @@ export function mountFrontPass(){
  let disposeViewer=null;
  let revealTimer=null;
  let revealAudio=null;
+ let revealSoundTimer=null;
  const COST=950;
  const getCoins=()=>{const el=document.querySelector('#wallet-balance');const n=Number((el?.textContent||'100000').replace(/[^\d]/g,''));return Number.isFinite(n)?n:100000};
  const updateCoins=n=>{try{localStorage.setItem('sf-coins-balance',String(n))}catch{};const el=document.querySelector('#wallet-balance');if(el)el.textContent=n.toLocaleString('en-US');};
  const hasPremium=()=>localStorage.getItem('sf-frontpass-premium')==='true';
  const logo=import.meta.env.BASE_URL+'images/skyfront-logo.png';
- const closeReveal=()=>{clearTimeout(revealTimer);revealTimer=null;revealAudio?.pause();revealAudio=null;document.querySelector('#fp-reveal')?.remove();};
+ const closeReveal=()=>{clearTimeout(revealSoundTimer);revealSoundTimer=null;clearTimeout(revealTimer);revealTimer=null;revealAudio?.pause();revealAudio=null;document.querySelector('#fp-reveal')?.remove();};
  const showReveal=()=>{
   closeReveal();const overlay=document.createElement('div');overlay.id='fp-reveal';overlay.className='fp-reveal';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','FrontPass unlocked');
   overlay.innerHTML='<div class="fp-reveal-stars"></div><div class="fp-reveal-ring"></div><div class="fp-reveal-logo"><img src="'+logo+'" alt="SKYFRONT logo"></div><div class="fp-reveal-copy"><span>SEASON 1 · SKYRISE</span><h2>FRONTPASS<br><em>UNLOCKED</em></h2><p>THE PREMIUM TRACK IS YOURS</p></div><button class="fp-reveal-skip" type="button">SKIP ›</button>';
   document.body.appendChild(overlay);overlay.querySelector('button').addEventListener('click',closeReveal);overlay.querySelector('button').focus();
-  revealAudio=new Audio(import.meta.env.BASE_URL+'audio/Reveal.mp3');revealAudio.volume=.8;revealAudio.play().catch(()=>{});
+  // Sync the reveal sound with the gold logo AND visible unlock text (~6 seconds).
+  revealSoundTimer=setTimeout(()=>{
+   revealSoundTimer=null;
+   if(!overlay.isConnected)return;
+   revealAudio=new Audio(import.meta.env.BASE_URL+'audio/Reveal.mp3');
+   revealAudio.volume=.8;
+   revealAudio.play().catch(()=>{});
+  },6000);
   revealTimer=setTimeout(closeReveal,10000);
  };
  const buyPremium=()=>{if(hasPremium()){notify('Premium FrontPass is already unlocked.');return};const coins=getCoins();if(coins<COST){notify('Not enough S-Coins. You need '+(COST-coins)+' more.');return};updateCoins(coins-COST);localStorage.setItem('sf-frontpass-premium','true');render();showReveal()};
