@@ -227,7 +227,7 @@ partyNoticeSound.volume=.6;
 let partyNoticeTimer;
 document.addEventListener('sf:party-notice',event=>{
  const {kind,username}=event.detail||{};
- const message=kind==='join'?'JOINED YOUR PARTY':kind==='leave'?'LEFT YOUR PARTY':kind==='leader'?'YOU ARE NOW PARTY LEADER':kind==='leave-self'?'YOU LEFT THE PARTY':kind==='join-self'?'YOU JOINED A PARTY':'PARTY UPDATED';
+ const message=kind==='join'?'JOINED YOUR PARTY':kind==='leave'?'LEFT YOUR PARTY':kind==='leader'?'YOU ARE NOW PARTY LEADER':kind==='leader-changed'?'IS NOW PARTY LEADER':kind==='leave-self'?'YOU LEFT THE PARTY':kind==='join-self'?'YOU JOINED A PARTY':'PARTY UPDATED';
  let toast=document.querySelector('#sf-party-notice');
  if(!toast){toast=document.createElement('div');toast.id='sf-party-notice';toast.className='sf-party-notice';toast.setAttribute('role','status');document.body.append(toast);}
  const name=toast.querySelector('.sf-party-notice-name');
