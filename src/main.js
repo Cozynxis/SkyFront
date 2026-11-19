@@ -1,7 +1,7 @@
 import { mountLocker } from './locker.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
-import { installAudio } from './audio.js';
+import { installAudio, readSettings } from './audio.js';
 import { mountCareer } from './career.js';
 import { mountCommunity } from './community.js';
 import { installAuthGate } from './auth.js';
@@ -223,7 +223,8 @@ function renderLobbyParty(members){
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
 
 const partyNoticeSound=new Audio(import.meta.env.BASE_URL+'audio/Notification.mp3');
-partyNoticeSound.volume=.6;
+partyNoticeSound.volume=readSettings().notifications?readSettings().notificationVolume/100:0;
+window.addEventListener('skyfront:settings-changed',e=>{partyNoticeSound.volume=e.detail.notifications?e.detail.notificationVolume/100:0});
 let partyNoticeTimer;
 document.addEventListener('sf:party-notice',event=>{
  const {kind,username}=event.detail||{};
@@ -239,6 +240,6 @@ document.addEventListener('sf:party-notice',event=>{
  clearTimeout(partyNoticeTimer);
  toast.classList.remove('visible');
  requestAnimationFrame(()=>toast.classList.add('visible'));
- partyNoticeSound.currentTime=0;partyNoticeSound.play().catch(()=>{});
+ if(readSettings().notifications){partyNoticeSound.currentTime=0;partyNoticeSound.play().catch(()=>{});}
  partyNoticeTimer=setTimeout(()=>toast.classList.remove('visible'),4200);
 });
