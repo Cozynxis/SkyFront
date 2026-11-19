@@ -219,3 +219,24 @@ function renderLobbyParty(members){
  }
 }
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
+
+const partyNoticeSound=new Audio(import.meta.env.BASE_URL+'audio/Notification.mp3');
+partyNoticeSound.volume=.6;
+let partyNoticeTimer;
+document.addEventListener('sf:party-notice',event=>{
+ const {kind,username}=event.detail||{};
+ const message=kind==='join'?'JOINED YOUR PARTY':kind==='leave'?'LEFT YOUR PARTY':kind==='leader'?'YOU ARE NOW PARTY LEADER':'PARTY UPDATED';
+ let toast=document.querySelector('#sf-party-notice');
+ if(!toast){toast=document.createElement('div');toast.id='sf-party-notice';toast.className='sf-party-notice';toast.setAttribute('role','status');document.body.append(toast);}
+ const name=toast.querySelector('.sf-party-notice-name');
+ toast.replaceChildren();
+ const label=document.createElement('small');label.textContent='SKYFRONT • PARTY';
+ const heading=document.createElement('strong');heading.textContent=username||'Player';
+ const info=document.createElement('span');info.textContent=message;
+ toast.append(label,heading,info);
+ clearTimeout(partyNoticeTimer);
+ toast.classList.remove('visible');
+ requestAnimationFrame(()=>toast.classList.add('visible'));
+ partyNoticeSound.currentTime=0;partyNoticeSound.play().catch(()=>{});
+ partyNoticeTimer=setTimeout(()=>toast.classList.remove('visible'),4200);
+});
