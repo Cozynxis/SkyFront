@@ -53,6 +53,13 @@ app.innerHTML = `
     <main class="stage" id="stage" aria-live="polite"></main>
     <footer class="bottom-area"><nav class="dock" aria-label="Main navigation"></nav></footer>
   </div>`;
+function applyVisualSettings(settings=readSettings()){
+ document.body.classList.toggle('sf-settings-no-animations',!settings.animations);
+ document.body.classList.toggle('sf-settings-low',settings.quality==='low');
+ document.body.classList.toggle('sf-settings-medium',settings.quality==='medium');
+}
+window.addEventListener('skyfront:settings-changed',e=>applyVisualSettings(e.detail));
+applyVisualSettings();
 installAuthGate();
 installAccountMenu();
 installFriends();
