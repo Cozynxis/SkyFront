@@ -1,6 +1,7 @@
 import { supabase } from './community.js';
 import './auth.css';
 
+const randomUsername = () => 'Sky' + Array.from(crypto.getRandomValues(new Uint8Array(7)), byte => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[byte % 32]).join('');
 const escapeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function installAuthGate() {
   const gate=document.createElement('div');
@@ -44,7 +45,7 @@ export function installAuthGate() {
     requestPending=true;submit.disabled=true;message(mode==='register'?'Creating your account…':'Signing in…');
     try {
       const result=mode==='register'
-        ?await supabase.auth.signUp({email,password:pass})
+        ?await supabase.auth.signUp({email,password:pass,options:{data:{username:randomUsername()}}})
         :await supabase.auth.signInWithPassword({email,password:pass});
       if(result.error){message(result.error.message,true);return;}
       if(mode==='register'&&!result.data.session){
@@ -64,11 +65,20 @@ export function installAuthGate() {
     const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
     message(error?error.message:'If this account exists, a password reset email has been sent.',!!error);
   };
+  // Keep a second tab in sync with the first tab's persisted Supabase session.
+  // Supabase owns the token storage and cross-tab refresh; never store passwords here.
+  const checkSharedSession=async()=>{
+    try { const {data,error}=await supabase.auth.getUser(); if(authReady)showGate(!!error||!data?.user); }
+    catch { if(authReady)showGate(true); }
+  };
+  const onFocus=()=>{void checkSharedSession()};
+  window.addEventListener('focus',onFocus);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)void checkSharedSession()});
   // Supabase persists the session locally and refreshes tokens automatically.
   // Validate the restored session before revealing the game.
   const listener=supabase.auth.onAuthStateChange((event,session)=>{
     if(event==='SIGNED_OUT'){showGate(true);setMode('login');return;}
-    if(authReady&&event==='SIGNED_IN'&&session?.user){showGate(false);}
+    if(authReady&&(event==='SIGNED_IN'||event==='TOKEN_REFRESHED')&&session?.user){showGate(false);}
   });
   (async()=>{
     try{
