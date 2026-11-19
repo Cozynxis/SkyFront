@@ -56,3 +56,9 @@ body.sf-on-play .sf-friends-trigger:not([hidden]){display:flex}
 .sf-friend-profile-details .sf-profile-flag{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:34px;line-height:1.35;font-weight:400;display:block;filter:drop-shadow(0 3px 4px #0005)}
 
 .sf-country-flag{display:block;width:52px;height:36px;object-fit:cover;border-radius:5px;margin:5px auto 0;box-shadow:0 2px 8px #0006}
+
+/* Clear request groups, with compact section headers */
+.sf-social-section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 10px;padding:10px 12px;border-bottom:1px solid #a6c7ff55;color:#f0f6ff;font-size:12px;font-weight:900;letter-spacing:.11em}
+.sf-social-section-title:first-child{margin-top:4px}
+.sf-social-section-title b{display:grid;place-items:center;min-width:22px;height:22px;border-radius:7px;background:#4c86d655;color:#fff;font-size:11px}
+.sf-social-section-empty{padding:13px 12px 18px;color:#aabedb;font-size:12px}
