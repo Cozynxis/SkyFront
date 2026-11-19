@@ -1,4 +1,5 @@
 import './career.css';
+import { supabase } from './community.js';
 
 const COUNTRY_CODES = ["AD","AE","AF","AG","AI","AL","AM","AO","AQ","AR","AS","AT","AU","AW","AX","AZ","BA","BB","BD","BE","BF","BG","BH","BI","BJ","BL","BM","BN","BO","BQ","BR","BS","BT","BV","BW","BY","BZ","CA","CC","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CU","CV","CW","CX","CY","CZ","DE","DJ","DK","DM","DO","DZ","EC","EE","EG","EH","ER","ES","ET","FI","FJ","FK","FM","FO","FR","GA","GB","GD","GE","GF","GG","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY","HK","HM","HN","HR","HT","HU","ID","IE","IL","IM","IN","IO","IQ","IR","IS","IT","JE","JM","JO","JP","KE","KG","KH","KI","KM","KN","KP","KR","KW","KY","KZ","LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY","MA","MC","MD","ME","MF","MG","MH","MK","ML","MM","MN","MO","MP","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ","NA","NC","NE","NF","NG","NI","NL","NO","NP","NR","NU","NZ","OM","PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PW","PY","QA","RE","RO","RS","RU","RW","SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","SS","ST","SV","SX","SY","SZ","TC","TD","TF","TG","TH","TJ","TK","TL","TM","TN","TO","TR","TT","TV","TW","TZ","UA","UG","UM","US","UY","UZ","VA","VC","VE","VG","VI","VN","VU","WF","WS","YE","YT","ZA","ZM","ZW"];
 const countryNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -30,11 +31,13 @@ function aggregate(mode,range){
 export function mountCareer(){
  const root=document.querySelector('#career-root');
  if(!root)return ()=>{};
- let mode='br-solo',range='all',flag=localStorage.getItem('sf-career-flag')||'NL';
+ let player=supabase.auth.getSession().then(({data})=>{playerId=data?.session?.user?.id||'';playerName=data?.session?.user?.user_metadata?.username||'PLAYER ONE';flag=localStorage.getItem('sf-career-flag:'+playerId)||'NL';render()});
+ let playerId='',playerName='PLAYER ONE';
+ let mode='br-solo',range='all',flag='NL';
  if(!FLAGS.some(f=>f[0]===flag))flag='NL';
  let modal=false,search='';
  const logo=import.meta.env.BASE_URL+'images/skyfront-logo.png';
- const name=()=>localStorage.getItem('sf-player-name')||'PLAYER ONE';
+ const name=()=>playerName;
  const flagImg=code=>`<img class="career-flag-image" src="https://flagcdn.com/w80/${code.toLowerCase()==='gb'?'gb':code.toLowerCase()}.png" alt="" loading="lazy">`;
  const flagItem=()=>FLAGS.find(f=>f[0]===flag)||FLAGS[0];
  const stat=(label,value,icon)=>`<div class="career-stat"><div class="career-stat-label"><span>${icon}</span>${label}</div><strong>${value}</strong></div>`;
@@ -80,12 +83,12 @@ export function mountCareer(){
   root.querySelector('#career-range').addEventListener('change',e=>{range=e.target.value;render()});
   root.querySelectorAll('[data-action="flag"]').forEach(b=>b.addEventListener('click',()=>{modal=true;render();root.querySelector('#career-flag-search')?.focus()}));
   root.querySelectorAll('[data-action="close"]').forEach(b=>b.addEventListener('click',()=>{modal=false;render()}));
-  root.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click',()=>{flag=b.dataset.flag;localStorage.setItem('sf-career-flag',flag);modal=false;render()}));
+  root.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click',()=>{flag=b.dataset.flag;localStorage.setItem('sf-career-flag:'+playerId,flag);modal=false;render()}));
   root.querySelector('#career-flag-search')?.addEventListener('input',e=>{const pos=e.target.selectionStart;search=e.target.value;render();const input=root.querySelector('#career-flag-search');input.focus();input.setSelectionRange(pos,pos)});
  };
  const key=e=>{if(e.key==='Escape'&&modal){modal=false;render()}};
  document.addEventListener('keydown',key);
- const profileUpdate=()=>render();window.addEventListener('skyfront:profile-changed',profileUpdate);
+ const profileUpdate=()=>{supabase.auth.getUser().then(({data})=>{playerName=data?.user?.user_metadata?.username||'PLAYER ONE';render()})};window.addEventListener('skyfront:profile-changed',profileUpdate);
  render();
  return ()=>{document.removeEventListener('keydown',key);window.removeEventListener('skyfront:profile-changed',profileUpdate)};
 }
