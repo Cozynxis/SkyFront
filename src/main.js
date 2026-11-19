@@ -1,3 +1,4 @@
+import {installLobbyNews,refreshLobbyNews} from './lobby-news.js';
 import { mountLocker } from './locker.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
@@ -87,6 +88,7 @@ window.addEventListener('skyfront:settings-changed',e=>{
  fpsIndicator.hidden=!fpsEnabled;
  if(!e.detail.showFps){fpsFrames=0;fpsWindowStart=0;}
 });
+installLobbyNews();
 installAuthGate();
 installAccountMenu();
 installFriends();
@@ -100,7 +102,7 @@ shopTopNav.innerHTML=pages.map(p=>`<button type="button" class="shop-nav-link" d
 shopTopNav.addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b)setPage(b.dataset.page)});
 function playMarkup(){
   return `<div class="play-layout">
-    <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><img class="news-logo" src="${logoUrl}" alt=""><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to SKYFRONT <span>↗</span></div></aside>
+    <aside class="side-panel" id="sf-lobby-news"></aside>
     <div class="center-space"><div class="sf-lobby-scene" id="sf-lobby-scene"><div class="sf-lobby-party" id="sf-lobby-party" aria-label="Party players"></div></div></div>
     <section class="game-panel"><div class="panel-eyebrow"><span class="pulse-dot"></span> THE LOBBY</div><h1>READY TO PLAY?</h1><button class="mode-card mode-selector" id="select-mode" type="button"><div><small>SELECTED MODE</small><strong id="mode-label">BATTLE ROYALE · SOLO</strong></div><span class="mode-icon">⌄</span></button><button class="primary-button" id="start-play" type="button">PLAY <span>SOON</span></button></section>
   </div><div class="mode-overlay" id="mode-overlay" hidden><div class="mode-backdrop" id="mode-backdrop"></div><section class="mode-dialog" role="dialog" aria-modal="true" aria-labelledby="mode-heading"><div class="mode-heading"><h2 id="mode-heading">SELECT GAME MODE</h2><button class="mode-close" id="mode-close" type="button" aria-label="Close">×</button></div><div class="mode-grid"><button class="mode-tile selected" id="battle-royale-tile" type="button"><img class="mode-logo" src="${logoUrl}" alt=""><strong>BATTLE ROYALE</strong><small>LAST PLAYER STANDING</small></button><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div></div><div class="team-options" id="team-options" hidden><h3>TEAM SETTINGS</h3><div class="team-buttons"><button data-team="SOLO" class="selected" type="button">SOLO</button><button data-team="DUO" type="button">DUO</button><button data-team="SQUAD" type="button">SQUAD</button></div><div class="fill-options" id="fill-options" hidden><span class="fill-title">TEAMMATES</span><div class="fill-buttons"><button type="button" data-fill="FILL" class="selected">FILL</button><button type="button" data-fill="NO-FILL">NO-FILL</button></div><p id="fill-description">Match with random teammates.</p></div><button class="mode-confirm" id="mode-confirm" type="button">CONFIRM SELECTION</button></div></section></div>`;
@@ -133,7 +135,7 @@ function setPage(id){
  stage.classList.remove('page-in');void stage.offsetWidth;stage.classList.add('page-in');
  stage.innerHTML=id==='play'?playMarkup():id==='locker'?'<div id="locker-root" style="width:100%"></div>':id==='shop'?'<div id="shop-root" style="width:100%"></div>':id==='battlepass'?'<div id="frontpass-root" style="width:100%"></div>':id==='career'?'<div id="career-root" style="width:100%"></div>':id==='community'?'<div id="community-root" style="width:100%"></div>':soonMarkup(p);
  stage.querySelector('#back-home')?.addEventListener('click',()=>setPage('play'));
- if(id==='play'){initModeSelector(); renderLobbyParty(window.__sfPartyMembers||[]);}
+ if(id==='play'){initModeSelector(); renderLobbyParty(window.__sfPartyMembers||[]);refreshLobbyNews();}
  if(id==='locker') mountLocker();
  if(id==='shop') cleanupShop=mountShop();
  if(id==='battlepass') cleanupFrontPass=mountFrontPass();
