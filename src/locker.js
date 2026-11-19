@@ -30,6 +30,40 @@ const cosmeticArt=(category,item,index=0)=>{
  }[category]||'';
  return `<svg class="sf-art-svg" viewBox="0 0 100 110" role="img" aria-label="${esc(item)}"><defs><radialGradient id="glow-${category}-${index}"><stop stop-color="${a}" stop-opacity=".38"/><stop offset="1" stop-color="${a}" stop-opacity="0"/></radialGradient></defs><ellipse cx="50" cy="55" rx="46" ry="51" fill="url(#glow-${category}-${index})"/>${item==='None'?'<path d="M22 25L78 85M78 25L22 85" stroke="#e7f7ff" stroke-width="11" stroke-linecap="round"/>':body}</svg>`;
 };
+
+const emoteCatalog=[
+ {id:'wave',name:'Wave',symbol:'👋',color:'#39c8ff'},
+ {id:'dance',name:'Victory Dance',symbol:'✦',color:'#c78aff'},
+ {id:'salute',name:'Salute',symbol:'★',color:'#f5b85a'},
+ {id:'cheer',name:'Cheer',symbol:'🙌',color:'#63d8b3'},
+ {id:'point',name:'Point It Out',symbol:'☞',color:'#75b9ff'},
+ {id:'clap',name:'Applause',symbol:'👏',color:'#ff87ac'},
+ {id:'pose',name:'Hero Pose',symbol:'⚡',color:'#ffcf62'},
+ {id:'laugh',name:'Laugh',symbol:'☺',color:'#b5a2ff'},
+ {id:'spin',name:'Spin',symbol:'↻',color:'#67e2e9'},
+ {id:'hello',name:'Hello There',symbol:'☀',color:'#f3a0d6'},
+ {id:'hype',name:'Hype',symbol:'♫',color:'#86d985'},
+ {id:'bow',name:'Bow',symbol:'◆',color:'#8eb3ff'}
+];
+const emoteStorageKey='skyfront-emote-wheel-v1';
+const loadWheel=()=>{try{const data=JSON.parse(localStorage.getItem(emoteStorageKey)||'[]');return Array.from({length:6},(_,i)=>emoteCatalog.some(e=>e.id===data?.[i])?data[i]:null)}catch{return Array(6).fill(null)}};
+let emoteWheel=loadWheel(),emoteSlot=0,emoteSearch='';
+export function getEmoteWheel(){return [...emoteWheel]}
+export function getEmoteById(id){return emoteCatalog.find(e=>e.id===id)||null}
+function saveEmoteWheel(){localStorage.setItem(emoteStorageKey,JSON.stringify(emoteWheel));window.dispatchEvent(new CustomEvent('skyfront:emote-wheel-changed',{detail:{slots:getEmoteWheel()}}))}
+function assignEmote(id){emoteWheel[emoteSlot]=id;saveEmoteWheel();render()}
+function emoteMarkup(){
+ const filtered=emoteCatalog.filter(e=>e.name.toLowerCase().includes(emoteSearch.toLowerCase()));
+ return `<section class="sf-emote-screen">
+ <div class="sf-emote-header"><div><div class="sf-loadout-sub">MY LOCKER LOADOUT</div><h1>EMOTES</h1><p>Choose a wheel slot, then pick an emote to assign.</p></div><span class="sf-emote-saved">✓ AUTO SAVED</span></div>
+ <div class="sf-emote-layout"><div class="sf-wheel-area">
+ <div class="sf-wheel" role="group" aria-label="Six emote wheel slots">
+ ${emoteWheel.map((id,i)=>{const em=getEmoteById(id);return `<button type="button" class="sf-wheel-slot ${emoteSlot===i?'active':''} ${em?'filled':''}" data-emote-slot="${i}" aria-label="Slot ${i+1}: ${em?esc(em.name):'Empty'}" aria-pressed="${emoteSlot===i}" style="--slot-angle:${i*60-90}deg;--emote-accent:${em?.color||'#79bce8'}"><span class="sf-wheel-number">${i+1}</span><span class="sf-wheel-symbol">${em?em.symbol:'+'}</span><small>${em?esc(em.name):'EMPTY'}</small></button>`}).join('')}
+ <div class="sf-wheel-center"><span>SKYFRONT</span><strong>EMOTE<br>WHEEL</strong><small>6 SLOTS</small></div></div>
+ <div class="sf-emote-selection"><span>SELECTED SLOT ${emoteSlot+1}</span><strong>${esc(getEmoteById(emoteWheel[emoteSlot])?.name||'EMPTY')}</strong><button type="button" id="sf-emote-clear" ${!emoteWheel[emoteSlot]?'disabled':''}>REMOVE EMOTE</button></div>
+ </div><div class="sf-emote-library"><div class="sf-emote-library-heading"><h2>YOUR EMOTES</h2><small>${emoteCatalog.length} AVAILABLE</small></div><label class="sf-search sf-emote-search"><span>⌕</span><input id="sf-emote-search" type="search" value="${esc(emoteSearch)}" placeholder="Search emotes..." aria-label="Search emotes"></label><div class="sf-emote-grid">${filtered.map(em=>`<button type="button" class="sf-emote-card ${emoteWheel[emoteSlot]===em.id?'active':''}" data-emote-id="${em.id}" style="--emote-accent:${em.color}" aria-label="Assign ${esc(em.name)} to slot ${emoteSlot+1}"><span class="sf-emote-card-symbol">${em.symbol}</span><strong>${esc(em.name)}</strong><small>${emoteWheel.includes(em.id)?'IN WHEEL · ':''}SELECT</small></button>`).join('')||'<p class="sf-no-results">No emotes found.</p>'}</div><p class="sf-emote-help">Click an emote to assign it instantly. Your wheel is saved automatically.</p></div></div></section>`;
+}
+
 function tile(item,index,c){
  const chosen=selected===item,eq=equipped[active]===item;
  return `<button type="button" class="sf-cosmetic ${chosen?'is-selected':''}" data-item="${esc(item)}" aria-pressed="${chosen}" title="${esc(item)}" style="--tile-color:${colors[index%colors.length]}">
@@ -47,8 +81,8 @@ function render(){
  if(sort==='az')filtered.sort((a,b)=>a.item.localeCompare(b.item));
  if(sort==='za')filtered.sort((a,b)=>b.item.localeCompare(a.item));
  root.innerHTML=`<div class="sf-locker ${overview?'sf-overview':'sf-detail-view'}">
- <aside class="sf-locker-rail"><div class="sf-rail-heading">LOCKER</div><button class="sf-rail-button ${!isEmotes?'active':''}" data-section="you" title="You"><span>◉</span><small>YOU</small></button><div class="sf-rail-divider"></div><button class="sf-rail-button ${isEmotes?'active':''}" data-section="emotes" title="Emotes"><span>♫</span><small>EMOTES</small><i>SOON</i></button></aside>
- ${overview?`<section class="sf-loadout"><div class="sf-loadout-sub">MY LOCKER LOADOUT</div><h1>CHARACTER</h1><div class="sf-loadout-grid">${categories.map(k=>`<button type="button" class="sf-loadout-card" data-category="${k.id}" aria-label="Open ${k.title}"><span class="sf-loadout-icon">${cosmeticArt(k.id,equipped[k.id],Math.max(0,k.items.indexOf(equipped[k.id])))}</span><strong>${k.title}</strong><small>${esc(equipped[k.id])}</small><span class="sf-loadout-arrow">↗</span></button>`).join('')}</div><div class="sf-loadout-note">SELECT A SLOT TO CUSTOMIZE YOUR LOADOUT</div></section>`:
+ <aside class="sf-locker-rail"><div class="sf-rail-heading">LOCKER</div><button class="sf-rail-button ${!isEmotes?'active':''}" data-section="you" title="You"><span>◉</span><small>YOU</small></button><div class="sf-rail-divider"></div><button class="sf-rail-button ${isEmotes?'active':''}" data-section="emotes" title="Emotes"><span>♫</span><small>EMOTES</small></button></aside>
+ ${isEmotes?emoteMarkup():overview?`<section class="sf-loadout"><div class="sf-loadout-sub">MY LOCKER LOADOUT</div><h1>CHARACTER</h1><div class="sf-loadout-grid">${categories.map(k=>`<button type="button" class="sf-loadout-card" data-category="${k.id}" aria-label="Open ${k.title}"><span class="sf-loadout-icon">${cosmeticArt(k.id,equipped[k.id],Math.max(0,k.items.indexOf(equipped[k.id])))}</span><strong>${k.title}</strong><small>${esc(equipped[k.id])}</small><span class="sf-loadout-arrow">↗</span></button>`).join('')}</div><div class="sf-loadout-note">SELECT A SLOT TO CUSTOMIZE YOUR LOADOUT</div></section>`:
  `<div class="sf-preview"><div class="sf-preview-stage"><div class="sf-preview-glow"></div><div class="sf-preview-object ${active}" style="--preview-color:${colors[Math.max(0,c.items.indexOf(selected))%colors.length]}">${active==='skin'||isEmotes?'<div class="sf-human"><div class="sf-head"></div><div class="sf-body"></div><div class="sf-arm left"></div><div class="sf-arm right"></div><div class="sf-leg left"></div><div class="sf-leg right"></div></div>':`<div class="sf-symbol">${selected==='None'?'×':c.icon}</div>`}</div><div class="sf-preview-platform"></div></div><div class="sf-preview-details"><div class="sf-rarity">SKYFRONT ORIGINAL · ${isEmotes?'EMOTE':c.title}</div><h2>${esc(isEmotes?'COMING SOON':selected)}</h2><p>${isEmotes?'Emotes will arrive in a future update.':'Original SKYFRONT cosmetic. 3D assets coming later.'}</p></div></div>
  <section class="sf-inventory">${isEmotes?`<div class="sf-coming"><h1>EMOTES</h1><p>This category is coming soon.</p><button data-section="you">BACK TO YOU</button></div>`:`
  <div class="sf-inventory-header"><button class="sf-back" id="sf-back" type="button">← BACK</button><h1>CHARACTER</h1></div>
@@ -57,6 +91,10 @@ function render(){
  <div class="sf-item-count">${filtered.length} COSMETICS · DOUBLE-CLICK TO EQUIP</div><div class="sf-cosmetic-grid" id="sf-grid">${filtered.map(x=>tile(x.item,x.index,c)).join('')||'<p class="sf-no-results">No cosmetics found.</p>'}</div>
  <div class="sf-inventory-footer"><span>${esc(selected)} ${equipped[active]===selected?'· EQUIPPED':''}</span><div><button type="button" id="sf-favorite">${favorites[favoriteKey()]?'♥ FAVORITED':'♡ FAVORITE'}</button><button type="button" id="sf-equip" ${equipped[active]===selected?'disabled':''}>${equipped[active]===selected?'EQUIPPED':'EQUIP'}</button></div></div>`}</section>`}
  </div>`;
+ root.querySelectorAll('[data-emote-slot]').forEach(b=>b.addEventListener('click',()=>{emoteSlot=Number(b.dataset.emoteSlot);render()}));
+ root.querySelectorAll('[data-emote-id]').forEach(b=>b.addEventListener('click',()=>assignEmote(b.dataset.emoteId)));
+ root.querySelector('#sf-emote-clear')?.addEventListener('click',()=>{emoteWheel[emoteSlot]=null;saveEmoteWheel();render()});
+ root.querySelector('#sf-emote-search')?.addEventListener('input',e=>{emoteSearch=e.target.value;const pos=e.target.selectionStart;render();const next=root.querySelector('#sf-emote-search');next?.focus();next?.setSelectionRange(pos,pos)});
  root.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>{section=b.dataset.section;view='overview';render()}));
  root.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>openCategory(b.dataset.category)));
  root.querySelector('#sf-back')?.addEventListener('click',()=>{view='overview';render()});
