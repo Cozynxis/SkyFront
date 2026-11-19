@@ -69,11 +69,11 @@ function renderAdmin(){
  adminHost.querySelectorAll('[data-move]').forEach(b=>b.onclick=async()=>{
   const idx=entries.findIndex(e=>e.id===b.dataset.id),other=idx+Number(b.dataset.move);
   if(idx<0||other<0||other>=entries.length)return;
-  const current=entries[idx],target=entries[other];
-  const a=await supabase.from('sf_announcements').update({lobby_order:target.lobby_order}).eq('id',current.id);
-  if(a.error){alert(a.error.message);return}
-  const b2=await supabase.from('sf_announcements').update({lobby_order:current.lobby_order}).eq('id',target.id);
-  if(b2.error){alert(b2.error.message);return}
+  const reordered=[...entries];
+  [reordered[idx],reordered[other]]=[reordered[other],reordered[idx]];
+  const results=await Promise.all(reordered.map((item,i)=>supabase.from('sf_announcements').update({lobby_order:(i+1)*10}).eq('id',item.id)));
+  const failure=results.find(r=>r.error);
+  if(failure){alert(failure.error.message);return}
   await fetchNews();
  });
 }
