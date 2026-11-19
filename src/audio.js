@@ -56,7 +56,7 @@ export function resumeMusicAfterCinematic(){
 }
 
 const SETTINGS_KEY='skyfront-settings-v1';
-const DEFAULT_SETTINGS={music:34,effects:65,notifications:true,notificationVolume:60,fps:60,quality:'high',animations:true};
+const DEFAULT_SETTINGS={music:34,effects:65,notifications:true,notificationVolume:60,fps:60,showFps:false,quality:'high',animations:true};
 export function readSettings(){
  try{return {...DEFAULT_SETTINGS,...JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}}catch{return {...DEFAULT_SETTINGS}}
 }
