@@ -22,8 +22,7 @@ const icons = {
 };
 const logoUrl = import.meta.env.BASE_URL + 'images/skyfront-logo.png';
 let selectedTeam='SOLO';
-let teamSize=1;
-const teamMax={SOLO:1,DUO:2,SQUAD:4};
+let fillMode='FILL';
 let current = 'play';
 let pageEvents=new AbortController();
 const app = document.querySelector('#app');
@@ -46,7 +45,7 @@ function playMarkup(){
     <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><img class="news-logo" src="${logoUrl}" alt=""><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to SKYFRONT <span>↗</span></div></aside>
     <div class="center-space" aria-hidden="true"><div class="platform platform-back"></div><div class="platform platform-main"></div></div>
     <section class="game-panel"><div class="panel-eyebrow"><span class="pulse-dot"></span> THE LOBBY</div><h1>READY TO PLAY?</h1><button class="mode-card mode-selector" id="select-mode" type="button"><div><small>SELECTED MODE</small><strong id="mode-label">BATTLE ROYALE · SOLO</strong></div><span class="mode-icon">⌄</span></button><button class="primary-button" id="start-play" type="button">PLAY <span>SOON</span></button></section>
-  </div><div class="mode-overlay" id="mode-overlay" hidden><div class="mode-backdrop" id="mode-backdrop"></div><section class="mode-dialog" role="dialog" aria-modal="true" aria-labelledby="mode-heading"><div class="mode-heading"><h2 id="mode-heading">SELECT GAME MODE</h2><button class="mode-close" id="mode-close" type="button" aria-label="Close">×</button></div><div class="mode-grid"><button class="mode-tile selected" id="battle-royale-tile" type="button"><img class="mode-logo" src="${logoUrl}" alt=""><strong>BATTLE ROYALE</strong><small>LAST PLAYER STANDING</small></button><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div></div><div class="team-options" id="team-options" hidden><h3>TEAM SETTINGS</h3><div class="team-buttons"><button data-team="SOLO" class="selected" type="button">SOLO</button><button data-team="DUO" type="button">DUO</button><button data-team="SQUAD" type="button">SQUAD</button></div><div class="team-size-row"><span>TEAM SIZE</span><div class="size-control"><button type="button" id="size-minus" aria-label="Decrease team size">−</button><strong id="team-size-value">1 / 1</strong><button type="button" id="size-plus" aria-label="Increase team size">+</button></div></div><button class="mode-confirm" id="mode-confirm" type="button">CONFIRM SELECTION</button></div></section></div>`;
+  </div><div class="mode-overlay" id="mode-overlay" hidden><div class="mode-backdrop" id="mode-backdrop"></div><section class="mode-dialog" role="dialog" aria-modal="true" aria-labelledby="mode-heading"><div class="mode-heading"><h2 id="mode-heading">SELECT GAME MODE</h2><button class="mode-close" id="mode-close" type="button" aria-label="Close">×</button></div><div class="mode-grid"><button class="mode-tile selected" id="battle-royale-tile" type="button"><img class="mode-logo" src="${logoUrl}" alt=""><strong>BATTLE ROYALE</strong><small>LAST PLAYER STANDING</small></button><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div></div><div class="team-options" id="team-options" hidden><h3>TEAM SETTINGS</h3><div class="team-buttons"><button data-team="SOLO" class="selected" type="button">SOLO</button><button data-team="DUO" type="button">DUO</button><button data-team="SQUAD" type="button">SQUAD</button></div><div class="fill-options" id="fill-options" hidden><span class="fill-title">TEAMMATES</span><div class="fill-buttons"><button type="button" data-fill="FILL" class="selected">FILL</button><button type="button" data-fill="NO-FILL">NO-FILL</button></div><p id="fill-description">Match with random teammates.</p></div><button class="mode-confirm" id="mode-confirm" type="button">CONFIRM SELECTION</button></div></section></div>`;
 }
 function soonMarkup(p){
   return `<div class="soon-layout"><div class="mascot" aria-hidden="true"><div class="mascot-shadow"></div><div class="mascot-body"><div class="mascot-eye eye-left"></div><div class="mascot-eye eye-right"></div><div class="mascot-mouth"></div><div class="mascot-cheek cheek-left"></div><div class="mascot-cheek cheek-right"></div></div><div class="mascot-arm arm-left"></div><div class="mascot-arm arm-right"></div><div class="mascot-foot foot-left"></div><div class="mascot-foot foot-right"></div><span class="mascot-question">?</span></div><div class="soon-eyebrow">${p.label} / UNDER CONSTRUCTION</div><h1>NOT HERE <em>YET!</em></h1><p>This page doesn't exist yet. Our little friend is working on it.</p><button class="back-button" type="button" id="back-home">← BACK TO LOBBY</button></div>`;
@@ -74,7 +73,7 @@ function initModeSelector(){
  const trigger=stage.querySelector('#select-mode');
  // The animated stage uses transforms, so the fixed overlay must live outside it.
  document.body.appendChild(overlay);
- label.textContent='BATTLE ROYALE · '+selectedTeam;
+ label.textContent=modeLabel();
  let previousFocus=null;
  let closeTimer;
  const renderTeam=()=>{
@@ -83,11 +82,16 @@ function initModeSelector(){
      button.classList.toggle('selected',active);
      button.setAttribute('aria-pressed',String(active));
    });
-   const max=teamMax[selectedTeam];
-   teamSize=Math.max(1,Math.min(teamSize,max));
-   overlay.querySelector('#team-size-value').textContent=teamSize+' / '+max;
-   overlay.querySelector('#size-minus').disabled=teamSize<=1;
-   overlay.querySelector('#size-plus').disabled=teamSize>=max;
+   const fillOptions=overlay.querySelector('#fill-options');
+   fillOptions.hidden=selectedTeam==='SOLO';
+   fillOptions.querySelectorAll('[data-fill]').forEach(button=>{
+     const active=button.dataset.fill===fillMode;
+     button.classList.toggle('selected',active);
+     button.setAttribute('aria-pressed',String(active));
+   });
+   overlay.querySelector('#fill-description').textContent=fillMode==='FILL'
+     ? 'Match with random teammates.'
+     : 'Enter without random teammates. Opponents can still be full teams.';
  };
  const close=()=>{
    if(overlay.hidden)return;
@@ -113,14 +117,15 @@ function initModeSelector(){
  });
  options.querySelectorAll('[data-team]').forEach(button=>button.addEventListener('click',()=>{
    selectedTeam=button.dataset.team;
-   teamSize=teamMax[selectedTeam];
    renderTeam();
  }));
- overlay.querySelector('#size-minus').addEventListener('click',()=>{teamSize--;renderTeam()});
- overlay.querySelector('#size-plus').addEventListener('click',()=>{teamSize++;renderTeam()});
+ options.querySelectorAll('[data-fill]').forEach(button=>button.addEventListener('click',()=>{
+   fillMode=button.dataset.fill;
+   renderTeam();
+ }));
  overlay.querySelector('#mode-confirm').addEventListener('click',()=>{
-   label.textContent='BATTLE ROYALE · '+selectedTeam;
-   trigger.setAttribute('aria-label','Selected mode: Battle Royale '+selectedTeam+', team size '+teamSize+'. Change mode');
+   label.textContent=modeLabel();
+   trigger.setAttribute('aria-label','Selected mode: '+modeLabel()+'. Change mode');
    close();
  });
  const onKey=e=>{
@@ -137,4 +142,8 @@ function initModeSelector(){
  document.addEventListener('keydown',onKey,{signal:pageEvents.signal});
  pageEvents.signal.addEventListener('abort',()=>{clearTimeout(closeTimer);overlay.remove();},{once:true});
  renderTeam();
+}
+
+function modeLabel(){
+ return 'BATTLE ROYALE · '+selectedTeam+(selectedTeam==='SOLO'?'':' · '+(fillMode==='FILL'?'FILL':'NO-FILL'));
 }
