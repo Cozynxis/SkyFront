@@ -54,3 +54,5 @@ body.sf-on-play .sf-friends-trigger:not([hidden]){display:flex}
 @media(prefers-reduced-motion:reduce){.sf-social-toast{transition:none}.sf-social-toast-progress{animation:none}}
 
 .sf-friend-profile-details .sf-profile-flag{font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;font-size:34px;line-height:1.35;font-weight:400;display:block;filter:drop-shadow(0 3px 4px #0005)}
+
+.sf-country-flag{display:block;width:52px;height:36px;object-fit:cover;border-radius:5px;margin:5px auto 0;box-shadow:0 2px 8px #0006}
