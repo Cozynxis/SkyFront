@@ -130,3 +130,13 @@ body.shop-page .shell{padding-bottom:12px}
 body.shop-page .stage{display:block;min-height:0}
 @media(max-width:1200px){body.shop-page .shop-top-nav{margin:12px auto 8px;width:max-content;max-width:100%;overflow-x:auto;justify-content:flex-start}}
 @media(max-width:700px){.wallet{padding:7px 9px;gap:5px}.wallet strong{font-size:11px}.top-right{gap:8px}body.shop-page .shop-top-nav{width:100%}.shop-nav-link{padding:8px 6px;font-size:9px}}
+
+/* Community: compact navigation anchored at the top, not below content */
+body.community-page .shell{min-height:100dvh;padding-top:clamp(10px,1.5vh,18px);padding-bottom:16px}
+body.community-page .topbar{position:relative;z-index:20;flex:0 0 auto}
+body.community-page .shop-top-nav{display:flex;position:relative;top:auto;z-index:19;align-items:center;justify-content:center;gap:3px;align-self:center;width:max-content;max-width:100%;margin:12px auto 6px;padding:5px;border:1px solid #ffffff35;border-radius:12px;background:#10294acb;backdrop-filter:blur(18px);box-shadow:0 7px 20px #07162c55;overflow-x:auto}
+body.community-page .shop-top-nav .shop-nav-link{flex:0 0 auto}
+body.community-page .bottom-area{display:none}
+body.community-page .stage{display:block;flex:1 1 auto;min-height:0;width:100%}
+body.community-page .cm-wrap{padding-top:10px}
+@media(max-width:850px){body.community-page .shop-top-nav{align-self:stretch;width:100%;justify-content:flex-start;margin:12px 0 6px}body.community-page .shell{padding-inline:clamp(12px,3vw,25px)}}
