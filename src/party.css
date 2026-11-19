@@ -48,3 +48,10 @@
 .sf-party-member.selected{background:#ffffff25;box-shadow:inset 3px 0 #73d5ff}
 @keyframes sfPartyDetailIn{from{opacity:0;transform:translateX(-15px) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}
 @media(max-width:760px){.sf-party-detail{left:auto;right:12px;top:100px;width:min(300px,calc(100vw - 24px));min-width:0;z-index:2}.sf-party-panel{width:min(420px,96vw)}}
+
+
+/* V5: always place the player options in the free space to the right. */
+.sf-party-layer .sf-party-detail{box-sizing:border-box;left:calc(min(420px,96vw) + 18px);right:auto;top:clamp(135px,23vh,250px);width:min(360px,calc(100vw - 460px));min-width:0;z-index:5;pointer-events:auto;visibility:visible;opacity:1}
+.sf-party-layer .sf-party-detail[hidden]{display:none!important}
+.sf-party-layer .sf-party-detail button{pointer-events:auto}
+@media(max-width:760px){.sf-party-layer .sf-party-detail{left:auto;right:12px;top:125px;width:min(310px,calc(100vw - 24px));max-height:calc(100dvh - 155px)}}
