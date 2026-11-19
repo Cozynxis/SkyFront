@@ -25,3 +25,17 @@ body.sf-settings-no-animations *,body.sf-settings-no-animations *::before,body.s
 body.sf-settings-low .light,body.sf-settings-low .grid-floor{display:none!important}
 body.sf-settings-medium .grid-floor{opacity:.25}
 @media(max-width:640px){.sf-settings-layout{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.sf-settings-tabs{flex-direction:row;gap:5px;padding:9px;border-right:0;border-bottom:1px solid #ffffff20}.sf-settings-tabs button{flex:1;justify-content:center;padding:12px 6px;font-size:11px;gap:5px}.sf-settings-content{padding:19px}.sf-settings-field{align-items:flex-start;flex-direction:column;gap:12px}.sf-settings-range{width:100%}.sf-settings-range input{flex:1;width:auto}}
+
+/* Tiny FPS overlay, unobtrusive and non-interactive. */
+#sf-fps-counter{position:fixed;left:9px;top:8px;z-index:100000;pointer-events:none;font:600 10px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.02em;color:#dcecffb8;background:#08152b85;border:1px solid #ffffff1c;padding:3px 6px;border-radius:5px;min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
+#sf-fps-counter[hidden]{display:none!important}
+/* Fast, polished popup entrance and exit, with no layout jump. */
+.sf-account-dialog-shade{animation:sfSettingsShadeIn .16s ease-out both}
+.sf-account-dialog{animation:sfSettingsDialogIn .19s cubic-bezier(.18,.85,.3,1) both}
+.sf-account-dialog-shade.sf-dialog-closing{animation:sfSettingsShadeOut .14s ease-in both;pointer-events:none}
+.sf-dialog-closing .sf-account-dialog{animation:sfSettingsDialogOut .14s ease-in both}
+@keyframes sfSettingsShadeIn{from{opacity:0}to{opacity:1}}
+@keyframes sfSettingsShadeOut{from{opacity:1}to{opacity:0}}
+@keyframes sfSettingsDialogIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes sfSettingsDialogOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(7px) scale(.99)}}
+@media(prefers-reduced-motion:reduce){.sf-account-dialog-shade,.sf-account-dialog,.sf-dialog-closing .sf-account-dialog{animation:none!important}}
