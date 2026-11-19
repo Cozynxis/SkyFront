@@ -1,13 +1,8 @@
 import './career.css';
 
-const FLAGS = [
- ['NL','🇳🇱','Netherlands'],['BE','🇧🇪','Belgium'],['DE','🇩🇪','Germany'],['FR','🇫🇷','France'],
- ['GB','🇬🇧','United Kingdom'],['US','🇺🇸','United States'],['CA','🇨🇦','Canada'],['ES','🇪🇸','Spain'],
- ['IT','🇮🇹','Italy'],['PT','🇵🇹','Portugal'],['PL','🇵🇱','Poland'],['SE','🇸🇪','Sweden'],
- ['NO','🇳🇴','Norway'],['DK','🇩🇰','Denmark'],['FI','🇫🇮','Finland'],['TR','🇹🇷','Türkiye'],
- ['BR','🇧🇷','Brazil'],['JP','🇯🇵','Japan'],['KR','🇰🇷','South Korea'],['AU','🇦🇺','Australia'],
- ['IN','🇮🇳','India'],['MX','🇲🇽','Mexico'],['UA','🇺🇦','Ukraine'],['CH','🇨🇭','Switzerland']
-];
+const COUNTRY_CODES = ["AD","AE","AF","AG","AI","AL","AM","AO","AQ","AR","AS","AT","AU","AW","AX","AZ","BA","BB","BD","BE","BF","BG","BH","BI","BJ","BL","BM","BN","BO","BQ","BR","BS","BT","BV","BW","BY","BZ","CA","CC","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CU","CV","CW","CX","CY","CZ","DE","DJ","DK","DM","DO","DZ","EC","EE","EG","EH","ER","ES","ET","FI","FJ","FK","FM","FO","FR","GA","GB","GD","GE","GF","GG","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY","HK","HM","HN","HR","HT","HU","ID","IE","IL","IM","IN","IO","IQ","IR","IS","IT","JE","JM","JO","JP","KE","KG","KH","KI","KM","KN","KP","KR","KW","KY","KZ","LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY","MA","MC","MD","ME","MF","MG","MH","MK","ML","MM","MN","MO","MP","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ","NA","NC","NE","NF","NG","NI","NL","NO","NP","NR","NU","NZ","OM","PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PW","PY","QA","RE","RO","RS","RU","RW","SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","SS","ST","SV","SX","SY","SZ","TC","TD","TF","TG","TH","TJ","TK","TL","TM","TN","TO","TR","TT","TV","TW","TZ","UA","UG","UM","US","UY","UZ","VA","VC","VE","VG","VI","VN","VU","WF","WS","YE","YT","ZA","ZM","ZW"];
+const countryNames = new Intl.DisplayNames(['en'], { type: 'region' });
+const FLAGS = COUNTRY_CODES.map(code => [code, '', countryNames.of(code)]).sort((a,b)=>a[2].localeCompare(b[2]));
 const MODES = [['br-solo','Battle Royale · Solo'],['br-duo','Battle Royale · Duo'],['br-squad','Battle Royale · Squad']];
 const WINDOWS = [['all','ALL TIME'],['7d','LAST 7 DAYS'],['1d','LAST 24 HOURS']];
 const safeNumber = v => Number.isFinite(Number(v)) ? Math.max(0,Number(v)) : 0;
