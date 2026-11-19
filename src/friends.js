@@ -52,7 +52,7 @@ export function installFriends(){
      });
  };
  const notice=(msg,error=false)=>{feedback.textContent=msg;feedback.classList.toggle('error',error)};
- const rpc=async(action,target)=>{const {error}=await supabase.rpc('sf_social_action',{action,target});if(error)throw error;};
+ const rpc=async(action,target)=>{if(['invite','accept_invite','decline_invite'].includes(action)){const p_action=action==='invite'?'invite':action==='accept_invite'?'accept':'decline';const {error}=await supabase.rpc('sf_party_action',{p_action,p_target:target});if(error)throw error;window.dispatchEvent(new Event('sf:party-changed'));return;}const {error}=await supabase.rpc('sf_social_action',{action,target});if(error)throw error;};
  const blockRpc=async(target,should_block)=>{const {error}=await supabase.rpc('sf_social_block',{target,should_block});if(error)throw error;};
  const getName=id=>profiles.get(id)?.username||'Player';
  const heartbeat=async()=>{if(!me)return;const country=localStorage.getItem('sf-career-flag:'+me)||'NL';await supabase.rpc('sf_social_presence',{p_country:country,p_level:1});};
@@ -127,7 +127,7 @@ export function installFriends(){
    if(action==='block'||action==='unblock')await blockRpc(id,action==='block');
    else await rpc(action,id);
    if(action==='invite'){inviteCooldown.set(id,Date.now());const inviteButton=b;inviteButton.disabled=true;let seconds=10;inviteButton.textContent='WAIT '+seconds+'S';const countdown=setInterval(()=>{seconds=Math.max(0,Math.ceil((INVITE_COOLDOWN_MS-(Date.now()-(inviteCooldown.get(id)||0)))/1000));if(!inviteButton.isConnected){clearInterval(countdown);return;}if(seconds===0){clearInterval(countdown);inviteButton.disabled=false;inviteButton.textContent='INVITE';}else inviteButton.textContent='WAIT '+seconds+'S';},250);}
-   notice(action==='invite'?'Party invitation sent!':action==='accept_invite'?'Invitation accepted. Party matchmaking will be available when multiplayer launches.':'Updated successfully.');
+   notice(action==='invite'?'Party invitation sent!':action==='accept_invite'?'Joined party! Open Party Management in the lobby.':'Updated successfully.');
    await load();
  }catch(err){notice(err.message,true)}finally{busy=false;b.disabled=action==='invite'&&Date.now()-(inviteCooldown.get(id)||0)<INVITE_COOLDOWN_MS}};
  const refresh=()=>{load().catch(()=>{})};refresh();timer=setInterval(refresh,12000);notificationTimer=setInterval(()=>{void heartbeat().catch(()=>{});},25000);
