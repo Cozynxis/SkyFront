@@ -4,6 +4,14 @@ import './community.css';
 export const supabase = createClient('https://tknnvjwjemwjodolsduh.supabase.co','sb_publishable_FHvReg6qTqKLD1QN2R7JKw_UipWliD6');
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const dateLabel = date => new Date(date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const pollCountdown = end => {
+ const ms=Date.parse(end)-Date.now();
+ if(!Number.isFinite(ms)||ms<=0)return 'Ended';
+ const seconds=Math.ceil(ms/1000);
+ if(seconds<60)return '00:'+String(seconds).padStart(2,'0');
+ if(seconds<3600)return Math.floor(seconds/60)+'m '+String(seconds%60).padStart(2,'0')+'s';
+ return Math.floor(seconds/3600)+'h '+String(Math.floor((seconds%3600)/60)).padStart(2,'0')+'m';
+};
 const notify = (root,message) => {const n=root.querySelector('.cm-status');if(n){n.textContent=message;n.hidden=!message;}};
 export function mountCommunity(){
  const root=document.querySelector('#community-root');
@@ -56,7 +64,7 @@ export function mountCommunity(){
    };
    const card=p=>{
     const opts=options.filter(o=>o.poll_id===p.id),selected=votes.find(v=>v.poll_id===p.id&&v.user_id===user?.id),total=opts.reduce((n,o)=>n+(counts[o.id]||0),0),open=isOpen(p);
-    return `<article class="cm-poll ${open?'':'cm-poll-ended'}"><div class="cm-poll-top"><span>${open?'● LIVE POLL':'✓ ENDED'}</span><small>${dateLabel(p.created_at)}</small></div><h3>${escapeHTML(p.question)}</h3><div class="cm-choices">${opts.map(o=>{const pct=total?Math.round((counts[o.id]||0)/total*100):0;return `<button data-vote="${o.id}" data-poll="${p.id}" ${!open?'disabled':''} class="${selected?.option_id===o.id?'chosen':''}"><span>${escapeHTML(o.label)}</span>${selected||!open?`<b>${pct}%</b><i style="width:${pct}%"></i>`:''}</button>`}).join('')}</div><p>${total} votes · ${!open?'Final results':selected?'Vote saved · select another answer to change':'Choose an answer to vote'}</p></article>`;
+    return `<article class="cm-poll ${open?'':'cm-poll-ended'}"><div class="cm-poll-top"><span>${open?'● LIVE POLL':'✓ ENDED'}</span><small>${open&&p.closes_at?`Ends in <span class="cm-poll-countdown" data-ends-at="${escapeHTML(p.closes_at)}">${pollCountdown(p.closes_at)}</span>`:dateLabel(p.created_at)}</small></div><h3>${escapeHTML(p.question)}</h3><div class="cm-choices">${opts.map(o=>{const pct=total?Math.round((counts[o.id]||0)/total*100):0;return `<button data-vote="${o.id}" data-poll="${p.id}" ${!open?'disabled':''} class="${selected?.option_id===o.id?'chosen':''}"><span>${escapeHTML(o.label)}</span>${selected||!open?`<b>${pct}%</b><i style="width:${pct}%"></i>`:''}</button>`}).join('')}</div><p>${total} votes · ${!open?'Final results':selected?'Vote saved · select another answer to change':'Choose an answer to vote'}</p></article>`;
    };
    const recent=polls.filter(p=>category(p)==='recent'),active=polls.filter(p=>category(p)==='active'),archive=polls.filter(p=>category(p)==='archive');
    content.innerHTML=`<div class="cm-section-title"><h2>COMMUNITY POLLS</h2><span>${active.length} ACTIVE</span></div>
@@ -158,7 +166,16 @@ export function mountCommunity(){
   modalHost.querySelectorAll('[data-admin]').forEach(b=>b.onclick=()=>{editing=null;adminTab=b.dataset.admin;adminSection(adminTab)});
   adminSection(adminTab);
  }
- const lifecycleTimer=setInterval(()=>{if(!destroyed&&section==='polls')render()},60000);
+ const lifecycleTimer=setInterval(()=>{
+  if(destroyed||section!=='polls')return;
+  let expired=false;
+  content.querySelectorAll('[data-ends-at]').forEach(el=>{
+   const left=Date.parse(el.dataset.endsAt)-Date.now();
+   if(left<=0){expired=true;return;}
+   el.textContent=pollCountdown(el.dataset.endsAt);
+  });
+  if(expired)render();
+ },1000);
  const refresh=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(()=>{if(!destroyed)load()},350)};
  channel=supabase.channel('skyfront-community-live').on('postgres_changes',{event:'*',schema:'public',table:'sf_announcements'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_polls'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_poll_options'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_poll_votes'},refresh).subscribe();
  const authListener=supabase.auth.onAuthStateChange(()=>{if(!destroyed)setTimeout(async()=>{if(!destroyed){await checkAccount();await load()}},0)});
