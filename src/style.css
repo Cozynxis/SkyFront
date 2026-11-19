@@ -90,3 +90,8 @@ button.mode-tile:hover{transform:translateY(-3px);filter:brightness(1.13)}
 .fill-buttons button{padding:12px 8px;border:1px solid #ffffff40;border-radius:8px;background:#ffffff17;color:#fff;font-weight:800;cursor:pointer;transition:background .18s,color .18s}
 .fill-buttons button.selected{background:#fff;color:#1d2d51}
 .fill-options p{margin:10px 0 0;font-size:11px;line-height:1.5;color:#c9d6ed}
+
+/* Compact alpha label next to the SKYFRONT title */
+.brand>span{display:flex;align-items:baseline;gap:9px;white-space:nowrap}
+.brand .alpha-version{display:inline;margin:0;font-family:Inter,Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:.025em;color:#c7d4f7;text-transform:none}
+@media(max-width:650px){.brand>span{gap:5px}.brand .alpha-version{font-size:8px}}
