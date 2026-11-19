@@ -201,6 +201,7 @@ function renderLobbyParty(members){
  const players=members.length?members.slice(0,4):[{user_id:'solo',username:document.querySelector('#sf-profile-name')?.firstChild?.textContent?.trim()||'YOU',leader_id:'solo'}];
  const count=players.length;
  scene.dataset.count=String(count);
+ const beforePositions=new Map([...host.children].map(el=>[el.dataset.id,el.getBoundingClientRect()]));
  const ids=new Set(players.map(p=>p.user_id));
  for(const child of [...host.children])if(!ids.has(child.dataset.id))child.remove();
  for(const p of players){
@@ -212,10 +213,26 @@ function renderLobbyParty(members){
    host.append(card);
   }
   const index=players.indexOf(p);
+  host.append(card);
   card.style.setProperty('--slot',index);
   card.classList.toggle('is-leader',p.user_id===p.leader_id);
   card.querySelector('strong').textContent=p.username||'Player';
   card.querySelector('small').textContent=p.user_id===p.leader_id?'♛ PARTY LEADER':'PARTY MEMBER';
+ }
+ // FLIP animation: existing pads move smoothly to their new positions.
+ for(const card of [...host.children]){
+  const before=beforePositions.get(card.dataset.id);
+  if(!before)continue;
+  const after=card.getBoundingClientRect();
+  const dx=before.left-after.left,dy=before.top-after.top;
+  if(Math.abs(dx)<1&&Math.abs(dy)<1)continue;
+  card.getAnimations().filter(a=>a.id==='sf-pad-reflow').forEach(a=>a.cancel());
+  const base=getComputedStyle(card).transform;
+  const matrix=base==='none'?new DOMMatrix():new DOMMatrix(base);
+  const from=new DOMMatrix(matrix.toString());
+  from.m41+=dx;from.m42+=dy;
+  const animation=card.animate([{transform:from.toString()},{transform:matrix.toString()}],{duration:720,easing:'cubic-bezier(.22,.8,.22,1)'});
+  animation.id='sf-pad-reflow';
  }
 }
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
@@ -225,7 +242,7 @@ partyNoticeSound.volume=.6;
 let partyNoticeTimer;
 document.addEventListener('sf:party-notice',event=>{
  const {kind,username}=event.detail||{};
- const message=kind==='join'?'JOINED YOUR PARTY':kind==='leave'?'LEFT YOUR PARTY':kind==='leader'?'YOU ARE NOW PARTY LEADER':'PARTY UPDATED';
+ const message=kind==='join'?'JOINED YOUR PARTY':kind==='leave'?'LEFT YOUR PARTY':kind==='leader'?'YOU ARE NOW PARTY LEADER':kind==='leave-self'?'YOU LEFT THE PARTY':kind==='join-self'?'YOU JOINED A PARTY':'PARTY UPDATED';
  let toast=document.querySelector('#sf-party-notice');
  if(!toast){toast=document.createElement('div');toast.id='sf-party-notice';toast.className='sf-party-notice';toast.setAttribute('role','status');document.body.append(toast);}
  const name=toast.querySelector('.sf-party-notice-name');
