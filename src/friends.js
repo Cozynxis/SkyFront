@@ -92,9 +92,18 @@ export function installFriends(){
      html=requests.filter(r=>r.status==='accepted').map(r=>row(uid(r,me),'FRIEND',[['invite','INVITE'],['remove','REMOVE'],['block','BLOCK']])).join('');
      if(!html)html='<div class="sf-friends-empty">NO FRIENDS YET<small>Search a player username to connect.</small></div>';
    }else if(tab==='requests'){
-     html=requests.filter(r=>r.status==='pending').map(r=>r.receiver===me?row(r.sender,'INCOMING FRIEND REQUEST',[['accept','ACCEPT'],['decline','DECLINE'],['block','BLOCK']]):row(r.receiver,'REQUEST SENT',[['cancel','CANCEL']])).join('');
-     html+=invites.filter(i=>i.receiver===me).map(i=>row(i.sender,'PARTY INVITATION',[['accept_invite','JOIN'],['decline_invite','DECLINE']])).join('');
-     if(!html)html='<div class="sf-friends-empty">ALL CAUGHT UP<small>No pending requests.</small></div>';
+     const partyIncoming=[...new Map(invites.filter(i=>i.receiver===me).map(i=>[i.sender,i])).values()];
+     const partyOutgoing=[...new Map(invites.filter(i=>i.sender===me).map(i=>[i.receiver,i])).values()];
+     const friendIncoming=requests.filter(r=>r.status==='pending'&&r.receiver===me);
+     const friendOutgoing=requests.filter(r=>r.status==='pending'&&r.sender===me);
+     html='<div class="sf-social-section-title"><span>PARTY REQUESTS</span><b>'+partyIncoming.length+'</b></div>';
+     html+=partyIncoming.map(i=>row(i.sender,'PARTY INVITATION',[['accept_invite','JOIN'],['decline_invite','DECLINE']])).join('');
+     html+=partyOutgoing.map(i=>row(i.receiver,'PARTY INVITE SENT',[])).join('');
+     if(!partyIncoming.length&&!partyOutgoing.length)html+='<div class="sf-social-section-empty">No party invitations</div>';
+     html+='<div class="sf-social-section-title"><span>FRIEND REQUESTS</span><b>'+friendIncoming.length+'</b></div>';
+     html+=friendIncoming.map(r=>row(r.sender,'INCOMING FRIEND REQUEST',[['accept','ACCEPT'],['decline','DECLINE'],['block','BLOCK']])).join('');
+     html+=friendOutgoing.map(r=>row(r.receiver,'FRIEND REQUEST SENT',[['cancel','CANCEL']])).join('');
+     if(!friendIncoming.length&&!friendOutgoing.length)html+='<div class="sf-social-section-empty">No friend requests</div>';
    }else{
      html=blocks.map(b=>row(b.blocked,'BLOCKED',[['unblock','UNBLOCK']])).join('');
      if(!html)html='<div class="sf-friends-empty">NO BLOCKED PLAYERS</div>';
