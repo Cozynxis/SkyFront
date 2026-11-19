@@ -55,6 +55,7 @@ export function installFriends(){
  }
  const open=async()=>{if(opened||button.hidden)return;opened=true;previousFocus=document.activeElement;layer.hidden=false;document.querySelector('.shell')?.setAttribute('inert','');requestAnimationFrame(()=>layer.classList.add('open'));layer.querySelector('[data-close]').focus();await load();};
  const close=()=>{if(!opened)return;opened=false;layer.classList.remove('open');document.querySelector('.shell')?.removeAttribute('inert');setTimeout(()=>{if(!opened)layer.hidden=true;},250);previousFocus?.focus()};
+ document.addEventListener('sf:leave-play',()=>{if(opened)close();});
  button.onclick=open;layer.querySelector('[data-close]').onclick=close;layer.querySelector('.sf-friends-shade').onclick=close;
  document.addEventListener('keydown',e=>{if(!opened)return;if(e.key==='Escape'){close();return}if(e.key==='Tab'){const els=[...layer.querySelectorAll('button:not([hidden]),input:not([hidden])')].filter(x=>x.offsetParent!==null);if(!els.length)return;const first=els[0],last=els.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
  layer.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render();});
