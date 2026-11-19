@@ -30,7 +30,7 @@ export function mountFrontPass(){
   revealSoundTimer=setTimeout(()=>{
    revealSoundTimer=null;
    if(!overlay.isConnected)return;
-   revealAudio=new Audio(import.meta.env.BASE_URL+'audio/Reveal.mp3');
+   revealAudio=new Audio(import.meta.env.BASE_URL+'audio/reveal.mp3');
    revealAudio.volume=.8;
    revealAudio.play().catch(()=>{});
   },6000);
