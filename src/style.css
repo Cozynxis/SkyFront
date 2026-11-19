@@ -106,3 +106,12 @@ body.locker-page .dock{padding:4px}
 body.locker-page .nav-item{min-height:clamp(40px,6vh,58px);gap:3px;padding:5px 2px}
 body.locker-page .nav-item svg{width:18px;height:18px}
 @media(max-height:650px){body.locker-page .brand-logo{width:40px;height:40px;max-width:40px;max-height:40px;flex-basis:40px}body.locker-page .topbar{min-height:40px}body.locker-page .nav-item{min-height:38px}}
+
+/* Eight-page responsive navigation, including Community */
+.dock{width:min(100%,1000px);grid-template-columns:repeat(8,minmax(0,1fr));gap:4px}
+.nav-item{min-width:0;white-space:nowrap}
+.nav-item span{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:800px){.dock{gap:2px;padding:5px}.nav-item{padding:8px 1px;gap:5px}.nav-item span{font-size:clamp(6px,.95vw,9px)}.nav-item svg{width:19px;height:19px}}
+@media(max-width:520px){.dock{grid-template-columns:repeat(8,minmax(0,1fr));width:100%;padding:4px 2px}.nav-item{min-height:50px;padding:7px 0}.nav-item svg{width:17px;height:17px}.nav-item span{font-size:6px;letter-spacing:0}}
+/* Keep the game interface within the available viewport on desktop */
+@media(min-width:851px){.shell{min-height:100dvh}.stage{min-height:0}.bottom-area{flex:0 0 auto}}
