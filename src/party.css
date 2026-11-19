@@ -69,3 +69,21 @@
 .sf-party-detail-actions p{margin:7px 0 0;text-align:left;font-size:10px;letter-spacing:.12em;color:#b2cdfa;font-weight:900}
 .sf-party-detail-actions button{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:10px}
 .sf-party-detail-actions button span{font-size:18px;opacity:.75}
+
+
+/* V7: compact party management card, no nested scrollbar */
+.sf-party-layer .sf-party-detail{top:clamp(150px,25vh,245px);width:min(360px,calc(100vw - 460px));max-height:calc(100dvh - 170px);overflow:visible;border-radius:17px;background:linear-gradient(155deg,#203d78,#102451);box-shadow:0 22px 60px #050c24a8}
+.sf-party-detail header{padding:17px 19px;border-bottom:1px solid #ffffff18;background:transparent}
+.sf-party-detail h2{font-size:23px;line-height:1.05}
+.sf-party-detail-body{padding:19px;align-items:stretch;gap:0;text-align:left}
+.sf-party-detail-identity{display:flex;align-items:center;gap:12px;padding-bottom:17px;border-bottom:1px solid #ffffff20;min-width:0}
+.sf-party-detail-avatar{flex:none;width:48px;height:48px;border-radius:13px;font-size:22px}
+.sf-party-detail-name{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sf-party-detail-name strong{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sf-party-detail-name small{color:#b8d0f5;font-size:11px}
+.sf-party-detail-actions{margin-top:17px;gap:10px}
+.sf-party-detail-actions button{width:100%;display:flex;align-items:center;gap:12px;padding:14px 13px;font-size:12px;border-radius:11px;text-align:left}
+.sf-party-detail-actions button b{flex:1;font-weight:900}
+.sf-party-detail-actions button span:first-child{width:22px;text-align:center;font-size:16px}
+.sf-party-detail-actions button span:last-child{font-size:20px}
+@media(max-width:760px){.sf-party-layer .sf-party-detail{top:125px;width:min(340px,calc(100vw - 24px));max-height:calc(100dvh - 140px);overflow-y:auto}}
