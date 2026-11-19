@@ -44,3 +44,6 @@ body.frontpass-page .shop-top-nav{margin-top:0!important;transform:translateY(-7
 @keyframes fpRevealTitle{0%,45%{opacity:0;transform:translateY(90px) scale(.72);filter:blur(18px)}56%{opacity:1;transform:translateY(0) scale(1.08);filter:blur(0)}64%,88%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}100%{opacity:0;transform:translateY(-35px) scale(1.05)}}
 @media(max-width:700px){.fp-reveal-cinematic{padding:9vh 12px 12vh}.fp-reveal-v2 .fp-reveal-copy h2{font-size:clamp(48px,12vw,85px)}}
 @media(prefers-reduced-motion:reduce){.fp-reveal-v2 .fp-reveal-copy,.fp-reveal-label,.fp-reveal-line,.fp-reveal-v2 .fp-reveal-flash{animation:none!important;opacity:1;filter:none;transform:none}.fp-reveal-v2 .fp-reveal-flash{opacity:0}}
+
+/* Raise FrontPass quick navigation without shifting the main page content. */
+body.frontpass-page .shop-top-nav{transform:translateY(-17px)!important;margin-bottom:-10px!important}
