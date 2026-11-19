@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import './community.css';
 
-const supabase = createClient('https://tknnvjwjemwjodolsduh.supabase.co','sb_publishable_FHvReg6qTqKLD1QN2R7JKw_UipWliD6');
+export const supabase = createClient('https://tknnvjwjemwjodolsduh.supabase.co','sb_publishable_FHvReg6qTqKLD1QN2R7JKw_UipWliD6');
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const dateLabel = date => new Date(date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 const notify = (root,message) => {const n=root.querySelector('.cm-status');if(n){n.textContent=message;n.hidden=!message;}};
