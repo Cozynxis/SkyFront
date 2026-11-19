@@ -27,11 +27,13 @@ export function installFriends(){
  const closeProfile=()=>{profileOpen=false;profilePopup.hidden=true;};
  profilePopup.querySelector('[data-profile-close]').onclick=closeProfile;
  profilePopup.querySelector('.sf-friend-profile-shade').onclick=closeProfile;
+ const timeAgo=value=>{if(!value)return 'unknown';const ms=Date.now()-new Date(value).getTime();if(!Number.isFinite(ms))return 'unknown';const sec=Math.max(0,Math.floor(ms/1000));if(sec<60)return 'just now';const min=Math.floor(sec/60);if(min<60)return min+'m ago';const hours=Math.floor(min/60);if(hours<24)return hours+'h ago';const days=Math.floor(hours/24);return days+'d ago';};
+ const lastOnline=id=>isOnline(id)?'ONLINE':'Last online: '+timeAgo(profiles.get(id)?.last_seen_at);
  const isOnline=id=>liveOnline.has(id)||( !presenceReady&&Boolean(profiles.get(id)?.is_online));
- const openProfile=id=>{const p=profiles.get(id);if(!p)return;profileOpen=true;profilePopup.hidden=false;const online=isOnline(id);profilePopup.querySelector('.sf-friend-profile-content').innerHTML='<div class="sf-friend-profile-avatar">'+esc(p.username.slice(0,1).toUpperCase())+'</div><h3>'+esc(p.username)+'</h3><p><i class="sf-presence-dot '+(online?'online':'offline')+'"></i>'+(online?'ONLINE':'OFFLINE')+'</p><div class="sf-friend-profile-details"><span>LEVEL <b>'+esc(p.player_level)+'</b></span><span>COUNTRY <b class="sf-profile-flag" title="'+esc(p.country_code||'')+'">'+flag(p.country_code)+'</b></span></div>';};
+ const openProfile=id=>{const p=profiles.get(id);if(!p)return;profileOpen=true;profilePopup.hidden=false;const online=isOnline(id);profilePopup.querySelector('.sf-friend-profile-content').innerHTML='<div class="sf-friend-profile-avatar">'+esc(p.username.slice(0,1).toUpperCase())+'</div><h3>'+esc(p.username)+'</h3><p><i class="sf-presence-dot '+(online?'online':'offline')+'"></i>'+(online?'ONLINE':lastOnline(id))+'</p><div class="sf-friend-profile-details"><span>LEVEL <b>'+esc(p.player_level)+'</b></span><span>COUNTRY <b class="sf-profile-flag" title="'+esc(p.country_code||'')+'">'+flag(p.country_code)+'</b></span></div>';};
  const refreshPresenceUI=()=>{if(opened){render();if(profileOpen&&profilePopup.dataset.user)openProfile(profilePopup.dataset.user);}};
  const updatePresence=()=>{if(!presenceChannel)return;const states=presenceChannel.presenceState();liveOnline=new Set(Object.values(states).flat().filter(v=>v?.user_id&&v.active).map(v=>v.user_id));presenceReady=true;refreshPresenceUI();};
- const trackPresence=async()=>{if(!presenceChannel||!me||presenceUser!==me)return;try{if(document.visibilityState==='visible')await presenceChannel.track({user_id:me,active:true});else await presenceChannel.untrack();}catch(e){console.warn('SKYFRONT presence:',e);}};
+ const trackPresence=async()=>{if(!presenceChannel||!me||presenceUser!==me)return;try{await presenceChannel.track({user_id:me,active:true});}catch(e){console.warn('SKYFRONT presence:',e);}};
  const connectPresence=id=>{
    clearTimeout(presenceRetry);presenceGeneration++;const generation=presenceGeneration;
    if(presenceChannel){void supabase.removeChannel(presenceChannel);presenceChannel=null;}
@@ -53,7 +55,7 @@ export function installFriends(){
  const rpc=async(action,target)=>{const {error}=await supabase.rpc('sf_social_action',{action,target});if(error)throw error;};
  const blockRpc=async(target,should_block)=>{const {error}=await supabase.rpc('sf_social_block',{target,should_block});if(error)throw error;};
  const getName=id=>profiles.get(id)?.username||'Player';
- const heartbeat=async()=>{if(!me||document.visibilityState!=='visible')return;const country=localStorage.getItem('sf-career-flag:'+me)||'NL';await supabase.rpc('sf_social_presence',{p_country:country,p_level:1});};
+ const heartbeat=async()=>{if(!me)return;const country=localStorage.getItem('sf-career-flag:'+me)||'NL';await supabase.rpc('sf_social_presence',{p_country:country,p_level:1});};
  const subscribe=userId=>{if(channel){supabase.removeChannel(channel);channel=null;}if(!userId)return;channel=supabase.channel('skyfront-social-'+userId).on('postgres_changes',{event:'*',schema:'public',table:'sf_friend_requests',filter:'receiver=eq.'+userId},()=>void load()).on('postgres_changes',{event:'*',schema:'public',table:'sf_party_invites',filter:'receiver=eq.'+userId},()=>void load()).subscribe();};
  async function load(){
    const {data:{user}}=await supabase.auth.getUser();me=user?.id||null;
@@ -82,7 +84,7 @@ export function installFriends(){
    if(opened)render();
  }
  function row(id,subtitle,actions){
-   const p=profiles.get(id);const status=isOnline(id)?'online':'offline';return '<article class="sf-friend-row"><span class="sf-friend-avatar">'+esc(getName(id).slice(0,1).toUpperCase())+'<i class="sf-presence-dot '+status+'"></i></span><button type="button" class="sf-friend-identity" data-profile="'+esc(id)+'"><strong>'+esc(getName(id))+'</strong><small>'+esc(subtitle)+' · '+(isOnline(id)?'ONLINE':'OFFLINE')+'</small></button><div class="sf-friend-actions">'+actions.map(([action,label])=>'<button type="button" data-action="'+action+'" data-user="'+esc(id)+'">'+esc(action==='invite'&&Date.now()-(inviteCooldown.get(id)||0)<INVITE_COOLDOWN_MS?'WAIT '+Math.ceil((INVITE_COOLDOWN_MS-(Date.now()-inviteCooldown.get(id)))/1000)+'S':label)+'</button>').join('')+'</div></article>';
+   const p=profiles.get(id);const status=isOnline(id)?'online':'offline';return '<article class="sf-friend-row"><span class="sf-friend-avatar">'+esc(getName(id).slice(0,1).toUpperCase())+'<i class="sf-presence-dot '+status+'"></i></span><button type="button" class="sf-friend-identity" data-profile="'+esc(id)+'"><strong>'+esc(getName(id))+'</strong><small>'+esc(subtitle)+' · '+lastOnline(id)+'</small></button><div class="sf-friend-actions">'+actions.map(([action,label])=>'<button type="button" data-action="'+action+'" data-user="'+esc(id)+'">'+esc(action==='invite'&&Date.now()-(inviteCooldown.get(id)||0)<INVITE_COOLDOWN_MS?'WAIT '+Math.ceil((INVITE_COOLDOWN_MS-(Date.now()-inviteCooldown.get(id)))/1000)+'S':label)+'</button>').join('')+'</div></article>';
  }
  function render(){
    layer.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
@@ -129,7 +131,7 @@ export function installFriends(){
    await load();
  }catch(err){notice(err.message,true)}finally{busy=false;b.disabled=action==='invite'&&Date.now()-(inviteCooldown.get(id)||0)<INVITE_COOLDOWN_MS}};
  const refresh=()=>{load().catch(()=>{})};refresh();timer=setInterval(refresh,12000);notificationTimer=setInterval(()=>{void heartbeat().catch(()=>{});},25000);
- const visibilityHandler=()=>{void trackPresence();if(!document.hidden){void heartbeat().catch(()=>{});refresh();}};
+ const visibilityHandler=()=>{if(!document.hidden){void heartbeat().catch(()=>{});refresh();}};
  document.addEventListener('visibilitychange',visibilityHandler);window.addEventListener('focus',visibilityHandler);window.addEventListener('blur',visibilityHandler);
  setTimeout(()=>void heartbeat().catch(()=>{}),1500);
  // The friends button belongs exclusively to the Play lobby, never other pages.
