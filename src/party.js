@@ -26,35 +26,23 @@ export function installParty(){
  const previous=lastPartySnapshot;
  const nextParty=next[0]?.party_id||null;
  const oldMembers=previous?.members||[];
- const oldIds=new Set(oldMembers.map(p=>p.user_id));
- const newIds=new Set(next.map(p=>p.user_id));
- // A stable party ID is ideal. When the view does not expose it, compare
- // overlapping member IDs instead of using the changing member list as an ID.
- const sameParty=!!previous&&!!next.length&&!!oldMembers.length&&(
-  (nextParty&&previous.party&&nextParty===previous.party)||
-  (!nextParty&&!previous.party&&next.some(p=>oldIds.has(p.user_id)))
- );
- if(sameParty){
-  for(const p of next){
-   if(!oldIds.has(p.user_id)){
-    document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:p.user_id===me?'join-self':'join',username:p.username||'Player'}}));
+ const oldIds=new Set(oldMembers.map(p=>String(p.user_id)));
+ const newIds=new Set(next.map(p=>String(p.user_id)));
+ const notify=(kind,username)=>document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind,username}}));
+ if(previous){
+  const overlapping=next.some(p=>oldIds.has(String(p.user_id)));
+  const sameParty=(!!nextParty&&nextParty===previous.party)||(!nextParty&&!previous.party&&overlapping);
+  if(sameParty){
+   for(const p of next)if(!oldIds.has(String(p.user_id)))notify(String(p.user_id)===String(me)?'join-self':'join',p.username||'Player');
+   for(const p of oldMembers)if(!newIds.has(String(p.user_id)))notify(String(p.user_id)===String(me)?'leave-self':'leave',p.username||'Player');
+   const newLeader=next.find(p=>p.leader_id)?.leader_id||null;
+   if(String(previous.leader)!==String(newLeader)&&newLeader){
+    const promoted=next.find(p=>String(p.user_id)===String(newLeader));
+    notify(String(newLeader)===String(me)?'leader':'leader-changed',promoted?.username||'Player');
    }
-  }
-  for(const p of oldMembers){
-   if(!newIds.has(p.user_id)){
-    document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:p.user_id===me?'leave-self':'leave',username:p.username||'Player'}}));
-   }
-  }
-  const newLeader=next.find(p=>p.leader_id)?.leader_id||null;
-  if(previous.leader!==newLeader){
-   const promoted=next.find(p=>p.user_id===newLeader);
-   document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:newLeader===me?'leader':'leader-changed',username:promoted?.username||'Player'}}));
-  }
- }else if(previous){
-  if(oldIds.has(me)&&!newIds.has(me)){
-   document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'leave-self',username:'You'}}));
-  }else if(!oldIds.has(me)&&newIds.has(me)&&oldMembers.length){
-   document.dispatchEvent(new CustomEvent('sf:party-notice',{detail:{kind:'join-self',username:'You'}}));
+  }else{
+   if(oldIds.has(String(me)))notify('leave-self','You');
+   if(newIds.has(String(me)))notify('join-self','You');
   }
  }
  lastPartySnapshot={party:nextParty,members:next.map(p=>({user_id:p.user_id,username:p.username})),leader:next.find(p=>p.leader_id)?.leader_id||null};
