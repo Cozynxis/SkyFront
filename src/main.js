@@ -1,3 +1,4 @@
+import { mountLocker } from './locker.js';
 import { installAudio } from './audio.js';
 import './style.css';
 
@@ -58,9 +59,10 @@ function setPage(id){
  root.style.setProperty('--dock',p.bar);
  dock.querySelectorAll('button').forEach(btn=>{const active=btn.dataset.page===id;btn.classList.toggle('active',active);btn.setAttribute('aria-current',active?'page':'false')});
  stage.classList.remove('page-in');void stage.offsetWidth;stage.classList.add('page-in');
- stage.innerHTML=id==='play'?playMarkup():soonMarkup(p);
+ stage.innerHTML=id==='play'?playMarkup():id==='locker'?'<div id="locker-root" style="width:100%"></div>':soonMarkup(p);
  stage.querySelector('#back-home')?.addEventListener('click',()=>setPage('play'));
  if(id==='play') initModeSelector();
+ if(id==='locker') mountLocker();
  document.title='SKYFRONT — '+p.label;
 }
 installAudio();
