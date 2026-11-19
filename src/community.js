@@ -15,6 +15,8 @@ export function mountCommunity(){
  const safeImage=url=> /^https:\/\//i.test(url||'') ? url : '';
  root.innerHTML=`<div class="cm-wrap"><div class="cm-hero"><div><span class="cm-kicker">SKYFRONT / COMMUNITY</span><h1>THE COMMUNITY</h1><p>Updates, announcements and your vote on what's next.</p></div><div class="cm-actions"><button class="cm-admin" hidden type="button">ADMIN STUDIO</button></div></div><div class="cm-tabs"><button data-tab="news" class="active">NEWS & ANNOUNCEMENTS</button><button data-tab="polls">COMMUNITY POLLS</button></div><div class="cm-status" role="status" hidden></div><div class="cm-content"></div></div><div class="cm-modal-host"></div>`;
  const content=root.querySelector('.cm-content'), modalHost=root.querySelector('.cm-modal-host');
+ // Keep dialogs outside the animated stage so fixed positioning uses the viewport.
+ document.body.appendChild(modalHost);
  const query=(selector)=>root.querySelector(selector);
  function modal(html){
   modalHost.innerHTML=`<div class="cm-modal-backdrop"><section class="cm-modal" role="dialog" aria-modal="true"><button class="cm-close" aria-label="Close dialog" type="button">×</button>${html}</section></div>`;
@@ -161,5 +163,5 @@ export function mountCommunity(){
  channel=supabase.channel('skyfront-community-live').on('postgres_changes',{event:'*',schema:'public',table:'sf_announcements'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_polls'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_poll_options'},refresh).on('postgres_changes',{event:'*',schema:'public',table:'sf_poll_votes'},refresh).subscribe();
  const authListener=supabase.auth.onAuthStateChange(()=>{if(!destroyed)setTimeout(async()=>{if(!destroyed){await checkAccount();await load()}},0)});
  checkAccount().then(load);
- return ()=>{destroyed=true;clearInterval(lifecycleTimer);clearTimeout(refreshTimer);supabase.removeChannel(channel);authListener.data.subscription.unsubscribe();modalHost.replaceChildren()};
+ return ()=>{destroyed=true;clearInterval(lifecycleTimer);clearTimeout(refreshTimer);supabase.removeChannel(channel);authListener.data.subscription.unsubscribe();modalHost.remove()};
 }
