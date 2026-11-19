@@ -36,15 +36,19 @@ app.innerHTML = `
   <div class="shell">
     <header class="topbar">
       <div class="brand"><img class="brand-logo" src="${logoUrl}" alt="SKYFRONT logo"><span>SKYFRONT<small class="alpha-version">Alpha V1.0.0</small></span></div>
-      <div class="top-right"><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
+      <div class="top-right"><div class="wallet" aria-label="S coins balance"><span class="sf-coin-mark" aria-hidden="true">S</span><strong id="wallet-balance">100,000</strong></div><span class="user"><b><img class="profile-logo" src="${logoUrl}" alt=""></b><span>PLAYER ONE<small>LEVEL 1</small></span></span></div>
     </header>
+    <div class="shop-top-nav" id="shop-top-nav" aria-label="Shop quick navigation"></div>
     <main class="stage" id="stage" aria-live="polite"></main>
     <footer class="bottom-area"><nav class="dock" aria-label="Main navigation"></nav></footer>
   </div>`;
 const stage=app.querySelector('#stage');
 const dock=app.querySelector('.dock');
+const shopTopNav=app.querySelector('#shop-top-nav');
 dock.innerHTML=pages.map(p=>`<button class="nav-item" type="button" data-page="${p.id}" aria-label="${p.label}">${icons[p.icon]}<span>${p.label}</span></button>`).join('');
 dock.addEventListener('click',e=>{const btn=e.target.closest('[data-page]');if(btn) setPage(btn.dataset.page);});
+shopTopNav.innerHTML=pages.map(p=>`<button type="button" class="shop-nav-link" data-page="${p.id}">${p.label}</button>`).join('');
+shopTopNav.addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b)setPage(b.dataset.page)});
 function playMarkup(){
   return `<div class="play-layout">
     <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><img class="news-logo" src="${logoUrl}" alt=""><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to SKYFRONT <span>↗</span></div></aside>
@@ -61,6 +65,8 @@ function setPage(id){
  if(cleanupShop){cleanupShop();cleanupShop=null;}
  const p=pages.find(x=>x.id===id)||pages[0];current=p.id;
  document.body.classList.toggle('locker-page',p.id==='locker');
+ document.body.classList.toggle('shop-page',p.id==='shop');
+ shopTopNav.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===p.id));
  const root=document.documentElement;
  p.colors.forEach((color,i)=>root.style.setProperty('--bg'+(i+1),color));
  root.style.setProperty('--dock',p.bar);
