@@ -31,3 +31,24 @@ body.sf-on-play .sf-friends-trigger:not([hidden]){display:flex}
 .sf-friend-profile-details b{display:block;margin-top:6px;font-size:18px;color:white}
 .sf-social-toast{position:fixed;top:100px;right:22px;z-index:12000;padding:15px 20px;max-width:min(340px,90vw);background:linear-gradient(125deg,#1c58aa,#142451);border:1px solid #95caff9c;border-radius:14px;box-shadow:0 14px 35px #0008;color:#fff;font-weight:900;animation:sfFriendPop .22s ease-out}
 @keyframes sfFriendPop{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Compact actionable social notifications */
+.sf-social-toast{width:min(370px,calc(100vw - 28px));max-width:none;padding:0;overflow:hidden;top:92px;right:22px;border-radius:15px;background:linear-gradient(120deg,#173d84,#101d43);border:1px solid #9fcaff80;box-shadow:0 18px 46px #0009;transform:translateX(calc(100% + 35px));opacity:0;transition:transform .28s cubic-bezier(.16,1,.3,1),opacity .22s;animation:none}
+.sf-social-toast.visible{transform:translateX(0);opacity:1}
+.sf-social-toast-head{display:flex;align-items:center;gap:12px;padding:15px 13px 13px}
+.sf-social-toast-symbol{flex:0 0 46px;height:46px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#4cbcff,#354ee9);font-size:27px;color:white}
+.sf-social-toast-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:2px}
+.sf-social-toast-copy small{font-size:10px;letter-spacing:.1em;color:#9fc8ff}
+.sf-social-toast-copy strong{font-size:18px;overflow-wrap:anywhere;font-family:'Barlow Condensed',Impact,sans-serif}
+.sf-social-toast-copy span{font-size:12px;font-weight:500;color:#d1dff5}
+.sf-social-toast-head [data-toast-dismiss]{align-self:flex-start;background:#ffffff1c;border:0;color:#fff;border-radius:8px;width:27px;height:27px;font-size:20px;cursor:pointer}
+.sf-social-toast-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 13px 13px}
+.sf-social-toast-actions button{border:0;border-radius:8px;padding:10px 8px;font-size:12px;font-weight:900;cursor:pointer;transition:filter .15s,transform .15s}
+.sf-social-toast-actions button:hover{filter:brightness(1.13);transform:translateY(-1px)}
+.sf-social-toast-actions button:first-child{background:#ffe44a;color:#18234a}
+.sf-social-toast-actions button:last-child{background:#ffffff24;color:white}
+.sf-social-toast-actions button:disabled{opacity:.55;cursor:wait}
+.sf-social-toast-progress{height:3px;background:#ffe44a;transform-origin:left;animation:sfToastCountdown 8.5s linear forwards}
+@keyframes sfToastCountdown{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@media(max-width:600px){.sf-social-toast{top:72px;right:14px}}
+@media(prefers-reduced-motion:reduce){.sf-social-toast{transition:none}.sf-social-toast-progress{animation:none}}
