@@ -21,15 +21,18 @@ export function mountShop(){
  if(!root)return;
  const nextRefresh=()=>{const d=new Date();d.setUTCHours(24,0,0,0);return d;};
  let refresh=nextRefresh();
- root.innerHTML='<div class="sf-shop"><div class="shop-header"><div><span class="shop-kicker">SKYFRONT / COSMETICS</span><h1>ITEM SHOP</h1><p>Discover new looks, gear and emotes.</p></div><div class="shop-refresh"><span>DEMO SHOP ROTATION</span><strong id="shop-countdown">--:--:--</strong><small>Resets at 00:00 UTC · Preview only</small></div></div><div class="shop-layout"><aside class="shop-sidebar"><h2>DISCOVER</h2><a href="#shop-featured">FEATURED</a><a href="#shop-daily">DAILY</a><a href="#shop-special-offers">SPECIAL OFFERS</a><span class="shop-side-note">More collections coming soon.</span></aside><div class="shop-collections" id="shop-collections"></div></div><div class="shop-footer">Cosmetics are preview items. Purchases and accounts are not connected yet.</div></div><div class="shop-modal" id="shop-modal" hidden><div class="shop-modal-shade" data-close></div><section class="shop-inspector" role="dialog" aria-modal="true" aria-labelledby="shop-item-title"><button class="shop-close" type="button" data-close aria-label="Close inspection">×</button><div class="shop-inspect-art" id="shop-inspect-art"></div><div class="shop-inspect-info"><span class="shop-inspect-rarity" id="shop-item-rarity"></span><h2 id="shop-item-title"></h2><span class="shop-inspect-type" id="shop-item-type"></span><p id="shop-item-desc"></p><div class="shop-inspect-price"><span class="shop-coin">V</span><strong id="shop-item-price"></strong></div><button type="button" class="shop-buy" disabled>COMING SOON · PREVIEW ONLY</button><small>In-game purchases are not available yet.</small></div></section></div>';
+ root.innerHTML='<div class="sf-shop"><div class="shop-header"><div><span class="shop-kicker">SKYFRONT / COSMETICS</span><h1>ITEM SHOP</h1><p>Discover new looks, gear and emotes.</p></div><div class="shop-refresh"><span>DEMO SHOP ROTATION</span><strong id="shop-countdown">--:--:--</strong><small>Resets at 00:00 UTC · Preview only</small></div></div><div class="shop-layout"><aside class="shop-sidebar"><h2>DISCOVER</h2><a href="#shop-featured">FEATURED</a><a href="#shop-daily">DAILY</a><a href="#shop-special-offers">SPECIAL OFFERS</a><span class="shop-side-note">More collections coming soon.</span></aside><div class="shop-collections" id="shop-collections"></div></div><div class="shop-footer">Cosmetics are preview items. Purchases and accounts are not connected yet.</div></div><div class="shop-modal" id="shop-modal" hidden><div class="shop-modal-shade" data-close></div><section class="shop-inspector" role="dialog" aria-modal="true" aria-labelledby="shop-item-title"><button class="shop-close" type="button" data-close aria-label="Close inspection">×</button><div class="shop-inspect-art" id="shop-inspect-art"></div><div class="shop-inspect-info"><span class="shop-inspect-rarity" id="shop-item-rarity"></span><h2 id="shop-item-title"></h2><span class="shop-inspect-type" id="shop-item-type"></span><p id="shop-item-desc"></p><div class="shop-inspect-price"><span class="sf-coin-mark" aria-hidden="true">S</span><strong id="shop-item-price"></strong></div><button type="button" class="shop-buy" disabled>COMING SOON · PREVIEW ONLY</button><small>In-game purchases are not available yet.</small></div></section></div>';
  const collections=root.querySelector('#shop-collections');
  for(const section of ['FEATURED','DAILY','SPECIAL OFFERS']){
   const sectionItems=items.filter(i=>i.section===section);
   const id='shop-'+section.toLowerCase().replaceAll(' ','-');
-  collections.insertAdjacentHTML('beforeend','<section class="shop-section" id="'+id+'"><div class="shop-section-title"><h2>'+section+'</h2><span>'+sectionItems.length+' ITEMS</span></div><div class="shop-grid">'+sectionItems.map(item=>'<button type="button" class="shop-item '+(item.special?'shop-special ':'')+'rarity-'+item.rarity+'" data-item="'+item.id+'" aria-label="Inspect '+escapeHTML(item.name)+'">'+(item.special?'<span class="shop-feature-label">SPECIAL</span>':'')+image(item)+'<div class="shop-item-details"><span class="shop-item-type">'+item.type+' · '+item.rarity.toUpperCase()+'</span><strong>'+escapeHTML(item.name)+'</strong><span class="shop-item-price"><span class="shop-coin">V</span>'+fmt(item.price)+'</span></div></button>').join('')+'</div></section>');
+  collections.insertAdjacentHTML('beforeend','<section class="shop-section" id="'+id+'"><div class="shop-section-title"><h2>'+section+'</h2><span>'+sectionItems.length+' ITEMS</span></div><div class="shop-grid">'+sectionItems.map(item=>'<button type="button" class="shop-item '+(item.special?'shop-special ':'')+'rarity-'+item.rarity+'" data-item="'+item.id+'" aria-label="Inspect '+escapeHTML(item.name)+'">'+(item.special?'<span class="shop-feature-label">SPECIAL</span>':'')+image(item)+'<div class="shop-item-details"><span class="shop-item-type">'+item.type+' · '+item.rarity.toUpperCase()+'</span><strong>'+escapeHTML(item.name)+'</strong><span class="shop-item-price"><span class="sf-coin-mark" aria-hidden="true">S</span>'+fmt(item.price)+'</span></div></button>').join('')+'</div></section>');
  }
  const modal=root.querySelector('#shop-modal');
- const close=()=>{modal.hidden=true;document.removeEventListener('keydown',onKey);lastFocus?.focus()};
+ // Portal the inspector to body: transformed page containers break fixed overlays.
+ document.body.appendChild(modal);
+ let previousOverflow='';
+ const close=()=>{modal.hidden=true;document.body.style.overflow=previousOverflow;document.removeEventListener('keydown',onKey);if(lastFocus?.isConnected)lastFocus.focus()};
  let lastFocus=null;
  const onKey=e=>{if(e.key==='Escape')close();if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button:not([disabled])')];if(controls.length){e.preventDefault();controls[0].focus()}}};
  closeModal=close;
@@ -45,6 +48,8 @@ export function mountShop(){
   root.querySelector('#shop-item-type').textContent=item.type;
   root.querySelector('#shop-item-desc').textContent=item.desc;
   root.querySelector('#shop-item-price').textContent=fmt(item.price);
+  previousOverflow=document.body.style.overflow;
+  document.body.style.overflow='hidden';
   modal.hidden=false;modal.querySelector('.shop-close').focus();
   document.addEventListener('keydown',onKey);
  });
@@ -57,5 +62,5 @@ export function mountShop(){
   countdown.textContent=[Math.floor(secs/3600),Math.floor(secs%3600/60),secs%60].map(n=>String(n).padStart(2,'0')).join(':');
  };
  const timer=setInterval(tick,1000);tick();
- return ()=>{clearInterval(timer);document.removeEventListener('keydown',onKey);closeModal=()=>{}};
+ return ()=>{clearInterval(timer);document.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;modal.remove();closeModal=()=>{}};
 }
