@@ -218,7 +218,6 @@ function renderLobbyParty(members){
   card.querySelector('strong').textContent=p.username||'Player';
   card.querySelector('small').textContent=p.user_id===p.leader_id?'♛ PARTY LEADER':'PARTY MEMBER';
  }
- }
  if(oldCount!==String(count))requestAnimationFrame(()=>{if(scene.isConnected)scene.dataset.count=String(count)});
 }
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
