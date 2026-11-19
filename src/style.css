@@ -174,3 +174,20 @@ body.community-page .cm-wrap{padding-top:10px}
 @keyframes sfPartySpawn{from{opacity:0;filter:brightness(2)}to{opacity:1;filter:brightness(1)}}
 @media(max-width:900px){.sf-lobby-scene{transform:scale(.78)}.sf-lobby-scene[data-count="4"]{transform:scale(.66)}}
 @media(max-width:600px){.sf-lobby-scene{transform:scale(.57)}.sf-lobby-scene[data-count="4"]{transform:scale(.48)}}
+
+/* Lobby V3 positioning repair: preserve a real grid area for the platform scene. */
+body.sf-on-play .play-layout{min-height:min(690px,calc(100dvh - 205px));align-items:stretch}
+body.sf-on-play .center-space{grid-column:2;display:block;position:relative;min-height:clamp(400px,62vh,700px);width:100%;align-self:stretch;overflow:visible}
+body.sf-on-play .sf-lobby-scene{position:absolute;inset:0;width:100%;height:100%;transform-origin:center center}
+body.sf-on-play .sf-lobby-party{position:absolute;inset:0;width:100%;height:100%;left:0;top:0;right:0;bottom:0;transform:none}
+body.sf-on-play .sf-lobby-player{left:50%;top:52%;animation:none;transform:translate(-50%,-50%) translate(var(--px,0px),var(--py,0px)) scale(var(--ps,1));transition:transform .7s cubic-bezier(.22,.8,.25,1),opacity .25s;will-change:transform}
+body.sf-on-play .sf-lobby-scene[data-count="1"] .sf-lobby-player{--px:0px;--py:0px}
+body.sf-on-play .sf-lobby-silhouette{display:grid;place-items:center}
+body.sf-on-play .sf-lobby-platform{flex:none;z-index:1}
+.sf-party-notice{position:fixed;top:105px;right:clamp(15px,3vw,55px);z-index:9500;min-width:230px;max-width:min(340px,90vw);display:grid;gap:4px;padding:16px 19px;border:1px solid #8adfff88;border-left:4px solid #69e9ff;border-radius:12px;background:linear-gradient(120deg,#153c7ef5,#0b1d44f5);box-shadow:0 16px 42px #0008;color:white;pointer-events:none;opacity:0;transform:translateX(25px) scale(.96);transition:opacity .22s,transform .25s}
+.sf-party-notice.visible{opacity:1;transform:translateX(0) scale(1)}
+.sf-party-notice small{font-size:10px;letter-spacing:.13em;color:#8adfff;font-weight:900}
+.sf-party-notice strong{font:900 24px 'Barlow Condensed',Impact,sans-serif}
+.sf-party-notice span{font-size:11px;font-weight:800;color:#dbeaff;letter-spacing:.07em}
+@media(max-width:900px){body.sf-on-play .center-space{min-height:440px}}
+@media(max-width:650px){body.sf-on-play .center-space{display:block;min-height:250px;height:250px;flex:none}body.sf-on-play .play-layout{min-height:0}body.sf-on-play .sf-lobby-scene{transform:scale(.65)}body.sf-on-play .sf-lobby-scene[data-count="4"]{transform:scale(.5)}}
