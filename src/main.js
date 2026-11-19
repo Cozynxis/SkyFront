@@ -4,6 +4,7 @@ import { mountFrontPass } from './frontpass.js';
 import { installAudio } from './audio.js';
 import { mountCareer } from './career.js';
 import { mountCommunity } from './community.js';
+import { installAuthGate } from './auth.js';
 import './style.css';
 
 const pages = [
@@ -48,6 +49,7 @@ app.innerHTML = `
     <main class="stage" id="stage" aria-live="polite"></main>
     <footer class="bottom-area"><nav class="dock" aria-label="Main navigation"></nav></footer>
   </div>`;
+installAuthGate();
 const stage=app.querySelector('#stage');
 const dock=app.querySelector('.dock');
 const shopTopNav=app.querySelector('#shop-top-nav');
