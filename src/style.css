@@ -47,3 +47,12 @@
 @keyframes revealTeams{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:980px){.play-layout{grid-template-columns:180px 1fr 245px}.side-panel{display:block}.game-panel h1{font-size:31px}.center-space{min-height:0}}
 @media(max-width:650px){.play-layout{display:flex;flex-direction:column;gap:20px;min-height:0;padding:15px 0 24px}.side-panel{width:min(100%,260px)}.game-panel{width:100%;margin-top:auto}.center-space{display:none}.stage{min-height:520px}.mode-tile{min-height:115px}.mode-dialog{padding:15px}}
+
+/* SKYFRONT brand image slots */
+.brand-logo{display:block;width:54px;height:54px;object-fit:cover;border-radius:13px;flex-shrink:0}
+.profile-logo{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
+.user b:has(.profile-logo){overflow:hidden;padding:0}
+.news-logo{position:absolute;top:12px;right:12px;width:32px;height:32px;object-fit:cover;border-radius:7px;z-index:2}
+.news-art{position:relative}
+.mode-logo{display:block;width:40px;height:40px;object-fit:cover;border-radius:9px;margin-bottom:auto}
+.mode-tile.locked .mode-logo{filter:grayscale(1);opacity:.55}
