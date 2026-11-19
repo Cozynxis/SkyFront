@@ -67,7 +67,7 @@ shopTopNav.addEventListener('click',e=>{const b=e.target.closest('[data-page]');
 function playMarkup(){
   return `<div class="play-layout">
     <aside class="side-panel"><div class="side-label">LATEST UPDATE <span>01 / 01</span></div><div class="news-art"><img class="news-logo" src="${logoUrl}" alt=""><span>SKYFRONT</span><strong>THE<br>BEGINNING.</strong><i>✦</i></div><div class="news-caption">Welcome to SKYFRONT <span>↗</span></div></aside>
-    <div class="center-space"><div class="platform platform-back"></div><div class="platform platform-main"></div><div class="sf-lobby-party" id="sf-lobby-party" aria-label="Party players"></div></div>
+    <div class="center-space"><div class="sf-lobby-scene" id="sf-lobby-scene"><div class="sf-lobby-party" id="sf-lobby-party" aria-label="Party players"></div></div></div>
     <section class="game-panel"><div class="panel-eyebrow"><span class="pulse-dot"></span> THE LOBBY</div><h1>READY TO PLAY?</h1><button class="mode-card mode-selector" id="select-mode" type="button"><div><small>SELECTED MODE</small><strong id="mode-label">BATTLE ROYALE · SOLO</strong></div><span class="mode-icon">⌄</span></button><button class="primary-button" id="start-play" type="button">PLAY <span>SOON</span></button></section>
   </div><div class="mode-overlay" id="mode-overlay" hidden><div class="mode-backdrop" id="mode-backdrop"></div><section class="mode-dialog" role="dialog" aria-modal="true" aria-labelledby="mode-heading"><div class="mode-heading"><h2 id="mode-heading">SELECT GAME MODE</h2><button class="mode-close" id="mode-close" type="button" aria-label="Close">×</button></div><div class="mode-grid"><button class="mode-tile selected" id="battle-royale-tile" type="button"><img class="mode-logo" src="${logoUrl}" alt=""><strong>BATTLE ROYALE</strong><small>LAST PLAYER STANDING</small></button><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div><div class="mode-tile locked"><img class="mode-logo" src="${logoUrl}" alt=""><strong>COMING SOON</strong></div></div><div class="team-options" id="team-options" hidden><h3>TEAM SETTINGS</h3><div class="team-buttons"><button data-team="SOLO" class="selected" type="button">SOLO</button><button data-team="DUO" type="button">DUO</button><button data-team="SQUAD" type="button">SQUAD</button></div><div class="fill-options" id="fill-options" hidden><span class="fill-title">TEAMMATES</span><div class="fill-buttons"><button type="button" data-fill="FILL" class="selected">FILL</button><button type="button" data-fill="NO-FILL">NO-FILL</button></div><p id="fill-description">Match with random teammates.</p></div><button class="mode-confirm" id="mode-confirm" type="button">CONFIRM SELECTION</button></div></section></div>`;
 }
@@ -195,7 +195,27 @@ function modeLabel(){
 }
 
 function renderLobbyParty(members){
- const host=stage.querySelector('#sf-lobby-party');if(!host)return;
- host.innerHTML=members.map((m,i)=>'<div class="sf-lobby-player" style="--slot:'+i+'"><div class="sf-lobby-silhouette"><span>◆</span></div><strong>'+String(m.username||'Player').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\\':'&#39;'}[c]||'&#39;'))+'</strong><small>'+(m.user_id===members[0]?.leader_id?'♛ LEADER':'PARTY MEMBER')+'</small></div>').join('');
+ const host=stage.querySelector('#sf-lobby-party');
+ const scene=stage.querySelector('#sf-lobby-scene');
+ if(!host||!scene)return;
+ const players=members.length?members.slice(0,4):[{user_id:'solo',username:document.querySelector('#sf-profile-name')?.firstChild?.textContent?.trim()||'YOU',leader_id:'solo'}];
+ const count=players.length;
+ scene.dataset.count=String(count);
+ const ids=new Set(players.map(p=>p.user_id));
+ for(const child of [...host.children])if(!ids.has(child.dataset.id))child.remove();
+ for(const p of players){
+  let card=[...host.children].find(el=>el.dataset.id===p.user_id);
+  if(!card){
+   card=document.createElement('div');card.className='sf-lobby-player';
+   card.dataset.id=p.user_id;
+   card.innerHTML='<div class="sf-lobby-silhouette"><span>◆</span></div><div class="sf-lobby-platform"><div class="sf-lobby-platform-inner"></div></div><strong></strong><small></small>';
+   host.append(card);
+  }
+  const index=players.indexOf(p);
+  card.style.setProperty('--slot',index);
+  card.classList.toggle('is-leader',p.user_id===p.leader_id);
+  card.querySelector('strong').textContent=p.username||'Player';
+  card.querySelector('small').textContent=p.user_id===p.leader_id?'♛ PARTY LEADER':'PARTY MEMBER';
+ }
 }
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
