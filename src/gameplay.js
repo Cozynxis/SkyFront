@@ -89,15 +89,29 @@ let yaw=0,pitch=0;
  void loadParty();
 
  const exit=()=>{dispose();onExit()};
+ const leaveFromMenu=()=>exit();
+ document.addEventListener('sf:leave-gameplay',leaveFromMenu);
  hud.querySelector('.sf-game-exit').addEventListener('click',exit);
  const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
- const keydown=e=>{if(movementCodes.includes(e.code)){keys.add(e.code);e.preventDefault()}};
+ const keydown=e=>{
+  if(e.code==='Escape'){
+   resetInput();
+   if(!locked){e.preventDefault();document.dispatchEvent(new Event('sf:open-game-menu'))}
+   // When pointer-locked, Escape unlocks it; lockchange opens the menu.
+   return;
+  }
+  if(movementCodes.includes(e.code)){keys.add(e.code);e.preventDefault()}
+ };
  const keyup=e=>keys.delete(e.code);
  const resetInput=()=>{keys.clear();moveVelocity.set(0,0)};
  const visibilityChange=()=>{if(document.hidden)resetInput()};
  const mouse=e=>{if(!locked)return;yaw-=e.movementX*.0024;pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0024,-1.45,1.45)};
  const lock=()=>{renderer.domElement.requestPointerLock?.()};
- const lockchange=()=>{locked=document.pointerLockElement===renderer.domElement};
+ const lockchange=()=>{
+  const wasLocked=locked;
+  locked=document.pointerLockElement===renderer.domElement;
+  if(wasLocked&&!locked&&alive){resetInput();document.dispatchEvent(new Event('sf:open-game-menu'))}
+ };
  window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',resetInput);document.addEventListener('visibilitychange',visibilityChange);document.addEventListener('mousemove',mouse);document.addEventListener('pointerlockchange',lockchange);renderer.domElement.addEventListener('click',lock);
  function collides(x,z){return structures.some(b=>Math.abs(x-b.x)<b.w/2+.45&&Math.abs(z-b.z)<b.d/2+.45&&b.h>1)}
  function tick(now){
@@ -133,6 +147,7 @@ let yaw=0,pitch=0;
  frame=requestAnimationFrame(tick);
  function dispose(){
   if(!alive)return;alive=false;cancelAnimationFrame(frame);
+  document.removeEventListener('sf:leave-gameplay',leaveFromMenu);
   if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
   window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',resetInput);document.removeEventListener('visibilitychange',visibilityChange);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
