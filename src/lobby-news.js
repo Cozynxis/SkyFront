@@ -1,5 +1,5 @@
 import {supabase} from './community.js';
-import {openSupportAdmin} from './support.js';
+import {openSupportAdmin,closeSupport} from './support.js';
 import './lobby-news.css';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -58,10 +58,26 @@ export async function canManageLobbyNews(){return verifyAdmin()}
 function renderAdmin(){
  if(!adminHost||!adminOpen)return;
  adminDataSignature=JSON.stringify([entries,seconds]);
- adminHost.innerHTML='<div class="sf-news-admin-shade"><section class="sf-news-admin" role="dialog" aria-modal="true" aria-label="SKYFRONT Admin Panel"><header><div><small>SKYFRONT / ADMINISTRATION</small><h2>ADMIN PANEL</h2><p>Manage news and player support</p></div><button type="button" data-admin-close aria-label="Close">×</button></header><div class="sf-news-admin-main"><nav class="sf-news-admin-pages" aria-label="Admin sections"><button type="button" data-admin-page="news" class="is-active">◈ NEWS & ANNOUNCEMENTS</button><button type="button" data-admin-page="support">✉ SUPPORT TICKETS</button></nav><div class="sf-news-admin-toolbar"><button type="button" data-open-support style="background:#ffdf37;color:#16244b;border:0;border-radius:8px;padding:12px 16px;font-weight:900;cursor:pointer">✉ SUPPORT TICKETS</button><label>NEWS ROTATION <select data-news-seconds>'+[3,5,8,10,15,20,30,45,60].map(v=>'<option value="'+v+'" '+(v===seconds?'selected':'')+'>'+v+' SECONDS</option>').join('')+'</select></label><button type="button" data-news-create>+ NEW ARTICLE</button></div><div class="sf-news-admin-list">'+(entries.length?entries.map((e,i)=>'<article class="sf-news-admin-row"><div class="sf-news-admin-thumb">'+(safeUrl(e.image_url)?'<img src="'+esc(safeUrl(e.image_url))+'" alt="">':'S')+'</div><div class="sf-news-admin-info"><strong>'+esc(e.title)+'</strong><small>'+esc(e.category||'NEWS')+' · '+(e.published?'PUBLISHED':'DRAFT')+' · '+(e.lobby_enabled?'IN LOBBY':'HIDDEN FROM LOBBY')+'</small></div><div class="sf-news-admin-actions"><button type="button" data-move="-1" data-id="'+esc(e.id)+'" '+(i===0?'disabled':'')+' title="Move up">↑</button><button type="button" data-move="1" data-id="'+esc(e.id)+'" '+(i===entries.length-1?'disabled':'')+' title="Move down">↓</button><button type="button" data-edit="'+esc(e.id)+'">EDIT</button><button type="button" data-delete="'+esc(e.id)+'" title="Delete">×</button></div></article>').join(''):'<p class="sf-news-admin-empty">No news yet. Create your first announcement.</p>')+'</div></div></section></div>';
+ adminHost.innerHTML='<div class="sf-news-admin-shade"><section class="sf-news-admin" role="dialog" aria-modal="true" aria-label="SKYFRONT Admin Panel"><header><div><small>SKYFRONT / ADMINISTRATION</small><h2>ADMIN PANEL</h2><p>Manage news and player support</p></div><button type="button" data-admin-close aria-label="Close">×</button></header><div class="sf-news-admin-main"><nav class="sf-news-admin-pages" aria-label="Admin sections"><button type="button" data-admin-page="news" class="is-active">◈ NEWS & ANNOUNCEMENTS</button><button type="button" data-admin-page="support">✉ SUPPORT TICKETS</button></nav><div data-admin-news><div class="sf-news-admin-toolbar"><button type="button" data-open-support style="background:#ffdf37;color:#16244b;border:0;border-radius:8px;padding:12px 16px;font-weight:900;cursor:pointer">✉ SUPPORT TICKETS</button><label>NEWS ROTATION <select data-news-seconds>'+[3,5,8,10,15,20,30,45,60].map(v=>'<option value="'+v+'" '+(v===seconds?'selected':'')+'>'+v+' SECONDS</option>').join('')+'</select></label><button type="button" data-news-create>+ NEW ARTICLE</button></div><div class="sf-news-admin-list">'+(entries.length?entries.map((e,i)=>'<article class="sf-news-admin-row"><div class="sf-news-admin-thumb">'+(safeUrl(e.image_url)?'<img src="'+esc(safeUrl(e.image_url))+'" alt="">':'S')+'</div><div class="sf-news-admin-info"><strong>'+esc(e.title)+'</strong><small>'+esc(e.category||'NEWS')+' · '+(e.published?'PUBLISHED':'DRAFT')+' · '+(e.lobby_enabled?'IN LOBBY':'HIDDEN FROM LOBBY')+'</small></div><div class="sf-news-admin-actions"><button type="button" data-move="-1" data-id="'+esc(e.id)+'" '+(i===0?'disabled':'')+' title="Move up">↑</button><button type="button" data-move="1" data-id="'+esc(e.id)+'" '+(i===entries.length-1?'disabled':'')+' title="Move down">↓</button><button type="button" data-edit="'+esc(e.id)+'">EDIT</button><button type="button" data-delete="'+esc(e.id)+'" title="Delete">×</button></div></article>').join(''):'<p class="sf-news-admin-empty">No news yet. Create your first announcement.</p>')+'</div></div><div data-admin-support hidden></div></div></section></div>';
  adminHost.querySelector('[data-admin-close]').onclick=closeAdmin;
- adminHost.querySelectorAll('[data-admin-page]').forEach(b=>b.onclick=()=>{if(b.dataset.adminPage==='support'){adminPage='support';adminHost.style.display='none';void openSupportAdmin();return}adminPage='news';renderAdmin()});
- adminHost.querySelector('[data-open-support]').onclick=()=>{adminPage='support';adminHost.style.display='none';void openSupportAdmin()};
+ const switchAdminPage=async page=>{
+  if(!adminOpen||!adminHost)return;
+  if(page===adminPage)return;
+  adminPage=page;
+  const news=adminHost.querySelector('[data-admin-news]');
+  const support=adminHost.querySelector('[data-admin-support]');
+  if(news)news.hidden=page!=='news';
+  if(support)support.hidden=page!=='support';
+  adminHost.querySelectorAll('[data-admin-page]').forEach(b=>{
+   const active=b.dataset.adminPage===page;
+   b.classList.toggle('is-active',active);
+   b.setAttribute('aria-selected',String(active));
+  });
+  if(page==='support')await openSupportAdmin(support);
+  else closeSupport();
+ };
+ adminHost.querySelectorAll('[data-admin-page]').forEach(b=>b.onclick=()=>{void switchAdminPage(b.dataset.adminPage)});
+ adminHost.querySelector('[data-open-support]').onclick=()=>{void switchAdminPage('support')};
  adminHost.querySelector('[data-news-create]').onclick=()=>editArticle(null);
  adminHost.querySelector('[data-news-seconds]').onchange=async e=>{
   const value=Number(e.target.value);
@@ -107,9 +123,14 @@ export async function openLobbyNewsAdmin(){
  if(!adminHost){adminHost=document.createElement('div');adminHost.className='sf-news-admin-host';document.body.append(adminHost)}
  adminOpen=true;adminPage='news';adminHost.style.display='';renderAdmin();return true;
 }
-function closeAdmin(){adminOpen=false;adminPage='news';if(adminHost){adminHost.style.display='';adminHost.replaceChildren()}}
+function closeAdmin(){adminOpen=false;adminPage='news';closeSupport();if(adminHost){adminHost.style.display='';adminHost.replaceChildren()}}
 export function installLobbyNews(){
- window.addEventListener('skyfront:support-admin-closed',()=>{if(adminOpen&&adminHost){adminPage='news';adminHost.style.display='';renderAdmin()}});
+ window.addEventListener('skyfront:support-admin-closed',()=>{if(adminOpen&&adminHost&&adminPage==='support'){
+  adminPage='news';
+  const news=adminHost.querySelector('[data-admin-news]');if(news)news.hidden=false;
+  const support=adminHost.querySelector('[data-admin-support]');if(support)support.hidden=true;
+  adminHost.querySelectorAll('[data-admin-page]').forEach(b=>{const active=b.dataset.adminPage==='news';b.classList.toggle('is-active',active);b.setAttribute('aria-selected',String(active))});
+ }});
  fetchNews();refresh=setInterval(fetchNews,20000);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(rotation);else{fetchNews();schedule()}});
  supabase.channel('sf-lobby-news').on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_announcements'},fetchNews).on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_news_config'},fetchNews).subscribe();
