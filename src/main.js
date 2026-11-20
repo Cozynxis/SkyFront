@@ -5,7 +5,7 @@ import { mountLocker, unmountLocker, getEquippedSkinName } from './locker.js';
 import { mountCharacterPreview } from './characters.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
-import { installAudio, readSettings } from './audio.js';
+import { installAudio, readSettings, playReadySound } from './audio.js';
 import { mountCareer } from './career.js';
 import { mountCommunity } from './community.js';
 import { installAuthGate } from './auth.js';
@@ -161,6 +161,7 @@ setPage('play');
 function initModeSelector(){
  const playButton=stage.querySelector('#start-play');
  playButton?.addEventListener('click',()=>{
+  playReadySound();
   playButton.disabled=true;
   const partySize=(window.__sfPartyMembers||[]).length||1;
   let cancelLoad=()=>{};
