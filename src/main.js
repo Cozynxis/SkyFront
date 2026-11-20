@@ -245,6 +245,7 @@ function renderLobbyParty(members){
  const players=members.length?members.slice(0,4):[{user_id:'solo',username:document.querySelector('#sf-profile-name')?.firstChild?.textContent?.trim()||'YOU',leader_id:'solo'}];
  const count=players.length;
  const oldCount=scene.dataset.count;
+ const previousPositions=new Map([...host.children].filter(el=>!el.classList.contains('sf-lobby-departing')).map(el=>[el.dataset.id,el.getBoundingClientRect()]));
  const ids=new Set(players.map(p=>String(p.user_id)));
  for(const child of [...host.children])if(!ids.has(child.dataset.id)){
   lobbyPreviewCleanup.get(child.dataset.id)?.();lobbyPreviewCleanup.delete(child.dataset.id);
@@ -274,7 +275,18 @@ function renderLobbyParty(members){
   card.querySelector('strong').textContent=p.username||'Player';
   card.querySelector('small').textContent=p.user_id===p.leader_id?'♛ PARTY LEADER':'PARTY MEMBER';
  }
- if(oldCount!==String(count))requestAnimationFrame(()=>{if(scene.isConnected)scene.dataset.count=String(count)});
+ if(oldCount!==String(count))scene.dataset.count=String(count);
+ requestAnimationFrame(()=>{
+  if(!host.isConnected)return;
+  for(const card of host.children){
+   if(card.classList.contains('sf-lobby-departing'))continue;
+   const before=previousPositions.get(card.dataset.id);
+   if(!before)continue;
+   const after=card.getBoundingClientRect();
+   const dx=before.left-after.left,dy=before.top-after.top;
+   if(Math.abs(dx)+Math.abs(dy)>2)card.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:520,easing:'cubic-bezier(.22,1,.36,1)'});
+  }
+ });
 }
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
 window.addEventListener('skyfront:cosmetic-changed',()=>{if(current==='play')renderLobbyParty(window.__sfPartyMembers||[]);});
