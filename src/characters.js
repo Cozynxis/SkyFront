@@ -81,7 +81,7 @@ export function mountCharacterPreview(host,name='Jaxon',options={}){
  const lobby=Boolean(options.lobby),interactive=!lobby;
  const scene=new THREE.Scene();
  const camera=new THREE.PerspectiveCamera(35,1,.1,100);
- camera.position.set(0,1.7,lobby?7.3:8.3);camera.lookAt(0,1.6,0);
+ camera.position.set(0,1.65,lobby?6.1:7.0);camera.lookAt(0,1.6,0);
  const label=document.createElement('div');label.className='sf-model-loading';label.textContent='LOADING '+name.toUpperCase()+'…';host.append(label);
  try{renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});}
  catch(e){label.textContent='3D preview unavailable';return()=>label.remove()}
