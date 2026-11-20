@@ -9,3 +9,9 @@
 .sf-game-exit:hover{background:#285ca6;transform:translateY(-2px)}
 body.sf-gameplay-active{overflow:hidden}
 @media(max-width:700px){.sf-game-brand{top:14px;left:14px;font-size:18px}.sf-game-exit{top:14px;right:14px;padding:9px}.sf-game-help{font-size:9px;white-space:normal;text-align:center;width:min(90%,370px)}}
+
+.sf-spawn-status{position:absolute;top:24px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;padding:13px 26px;border:1px solid #e0f3ff60;border-radius:14px;background:#0d2854c9;box-shadow:0 8px 35px #06173366;text-align:center}
+.sf-spawn-status strong{font-size:20px;letter-spacing:.08em}
+.sf-spawn-status span{font-size:12px;font-weight:900;color:#ffe17a;letter-spacing:.15em}
+.sf-spawn-status small{font-size:10px;color:#c3d9f3}
+@media(max-width:700px){.sf-spawn-status{top:70px;padding:8px 14px}.sf-spawn-status strong{font-size:14px}}
