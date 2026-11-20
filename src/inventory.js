@@ -36,7 +36,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
     <div class="sf-inventory-section sf-inventory-equipment"><h3>EQUIPMENT <span class="sf-inventory-slot-count">6 SLOTS</span></h3><div class="sf-inventory-grid"></div><p>THE PICKAXE IS LOCKED · DRAG WEAPONS TO REARRANGE</p></div>
    </div>
   </div>
-  <footer><button type="button" data-drop>DROP ITEM</button><span class="sf-inventory-drop-note"></span><span><kbd>E</kbd> CLOSE</span><span><kbd>ESC</kbd> BACK</span></footer>
+  <footer><button type="button" data-drop>DROP ITEM</button><span class="sf-inventory-drop-note"></span><span class="sf-inventory-esc-label">ESC <span>BACK</span></span></footer>
  </section>`;
  root.append(ui);
  const panel=ui.querySelector('.sf-inventory-panel'),backdrop=ui.querySelector('.sf-inventory-backdrop'),grid=ui.querySelector('.sf-inventory-grid'),detail=ui.querySelector('.sf-inventory-detail'),hint=ui.querySelector('.sf-pickup-hint');
