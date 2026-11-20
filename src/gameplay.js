@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import './gameplay.css';
 import {supabase} from './community.js';
+import {buildSpawnScenery} from './spawn-scenery.js';
 
 export function mountGameplay(root,{onExit=()=>{}}={}){
  let alive=true,frame=0,locked=false,phase='waiting',countdown=25,phaseClock=0,partyChannel=null,partyId=null,playerId=null,partyRoster=[],lastRosterUpdate=0;
@@ -21,26 +22,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.82}));
   mesh.position.set(x,h/2,z);scene.add(mesh);structures.push({x,z,w,d,h});
  }
- // Spawn island: runway, hangars, stacked cargo, fences, trees and a watchtower.
- block(0,-24,18,10,6,'#507da1');block(-23,-15,11,13,5,'#d4a77c');block(24,-18,13,10,7,'#738db7');
- const metal=new THREE.MeshStandardMaterial({color:'#516e87',metalness:.3,roughness:.72});
- const foliage=new THREE.MeshStandardMaterial({color:'#3e955f',roughness:1});
- const bark=new THREE.MeshStandardMaterial({color:'#805c3b',roughness:1});
- function cylinder(x,y,z,r,h,mat,segments=9){const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),mat);mesh.position.set(x,y,z);scene.add(mesh);return mesh}
- for(let i=0;i<22;i++){
-  const a=i*2.399,r=37+(i%4)*6,x=Math.cos(a)*r,z=Math.sin(a)*r;
-  cylinder(x,2.1,z,.48,4.2,bark);
-  const canopy=new THREE.Mesh(new THREE.ConeGeometry(3.2,7,8),foliage);canopy.position.set(x,7.1,z);scene.add(canopy);
- }
- for(let i=0;i<16;i++){const x=-30+(i%8)*7,z=-34+Math.floor(i/8)*9;block(x,z,3.6,3.6,2.4,i%3===0?'#e8a24e':i%3===1?'#3986b7':'#c85e5c')}
- for(let i=0;i<18;i++){
-  const x=-42+i*5;
-  block(x,-47,.2,.2,2.5,'#d6e6ed');block(x,39,.2,.2,2.5,'#d6e6ed');
- }
- for(let i=0;i<17;i++){const x=-42+i*5;block(x,-47,5,.15,.1,'#d6e6ed');block(x,39,5,.15,.1,'#d6e6ed')}
- block(37,-33,7,7,2,'#768da0');block(37,-33,2,2,12,'#73859c');
- for(let i=0;i<6;i++){const x=-22+i*8;block(x,23,2,2,1.3,'#ab9879')}
- for(let i=0;i<5;i++){const x=-18+i*9;block(x,-5,2.2,2.2,.9,'#a1b7c0')}
+ const disposeScenery=buildSpawnScenery(scene);
 
  const position=new THREE.Vector3(0,1.75,11);
  const remoteAvatars=new Map();
@@ -135,6 +117,7 @@ let yaw=0,pitch=0;
   window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
   if(partyChannel)void supabase.removeChannel(partyChannel);
+  disposeScenery();
   renderer.dispose();renderer.domElement.remove();hud.remove();
  }
  return dispose;
