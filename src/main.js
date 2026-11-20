@@ -44,6 +44,9 @@ let cleanupFrontPass=null;
 let cleanupCareer=null;
 let cleanupCommunity=null;
 const lobbyPreviewCleanup=new Map();
+let localPlayerId=null;
+supabase.auth.getUser().then(({data})=>{localPlayerId=data?.user?.id||null;if(current==='play')renderLobbyParty(window.__sfPartyMembers||[])}).catch(()=>{});
+supabase.auth.onAuthStateChange((_event,session)=>{localPlayerId=session?.user?.id||null;if(current==='play')queueMicrotask(()=>renderLobbyParty(window.__sfPartyMembers||[]));});
 function clearLobbyPreviews(){for(const cleanup of lobbyPreviewCleanup.values())cleanup();lobbyPreviewCleanup.clear();}
 const app = document.querySelector('#app');
 app.innerHTML = `
@@ -261,7 +264,7 @@ function renderLobbyParty(members){
   const ordered=[...host.children].filter(el=>!el.classList.contains('sf-lobby-departing'));
   if(ordered[index]!==card)host.insertBefore(card,ordered[index]||null);
   card.style.setProperty('--slot',index);
-  const skinName=p.user_id==='solo'||p.is_self?getEquippedSkinName():(p.skin_name||'Jaxon');
+  const skinName=p.user_id==='solo'||p.is_self||(localPlayerId&&String(p.user_id)===String(localPlayerId))?getEquippedSkinName():(p.skin_name||'Jaxon');
   if(card.dataset.skin!==skinName||!lobbyPreviewCleanup.has(card.dataset.id)){
    lobbyPreviewCleanup.get(card.dataset.id)?.();
    card.dataset.skin=skinName;
