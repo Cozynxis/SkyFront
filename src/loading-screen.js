@@ -22,6 +22,24 @@ export function showLoadingScreen({team='SOLO',fill='FILL',partySize=1,onReady=(
  const progress=root.querySelector('.sf-loading-track i'),status=root.querySelector('#sf-loading-status');
  const stages=[[900,16,'LOADING WORLD'],[2100,38,'PREPARING GAMEPLAY'],[3700,64,'LOADING SPAWN ISLAND'],[5100,85,'FINALIZING'],[6100,100,'READY']];
  for(const [delay,pct,label] of stages)timers.push(setTimeout(()=>{if(done)return;progress.style.width=pct+'%';status.textContent=label},delay));
- timers.push(setTimeout(()=>{if(done)return;done=true;root.classList.add('sf-loading-finish');setTimeout(()=>{root.remove();onReady()},360)},6750));
+ // Keep the loading screen opaque while the gameplay canvas is created.
+ // Otherwise the lobby flashes briefly between the two screens.
+ timers.push(setTimeout(()=>{
+  if(done)return;
+  done=true;
+  try{
+   onReady(); // Mount the gameplay world BEFORE hiding the loading screen.
+  }catch(error){
+   console.error('Unable to start SKYFRONT gameplay:',error);
+   root.remove();
+   onCancel();
+   return;
+  }
+  // Two frames give the new WebGL scene time to render behind the overlay.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   root.classList.add('sf-loading-finish');
+   setTimeout(()=>root.remove(),260);
+  }));
+ },6750));
  return cancel;
 }
