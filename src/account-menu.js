@@ -19,12 +19,22 @@ export function installAccountMenu(){
  layer.className='sf-account-layer';layer.hidden=true;
  layer.innerHTML='<div class="sf-account-shade"></div><aside class="sf-account-drawer" role="dialog" aria-modal="true" aria-label="Account menu"><div class="sf-drawer-head"><span>SKYFRONT / MENU</span><button type="button" data-close aria-label="Close menu">×</button></div><div class="sf-drawer-profile"><div class="sf-drawer-skin"></div><div><strong class="sf-drawer-username">PLAYER</strong><small class="sf-drawer-email"></small></div></div><div class="sf-drawer-links"><button type="button" data-account>◉ <span>ACCOUNT<small>Manage your profile and security</small></span><b>›</b></button><button type="button" data-settings>⚙ <span>SETTINGS<small>Preferences and controls</small></span><b>›</b></button></div><button class="sf-drawer-admin" type="button" data-admin-panel hidden>✦ <span>ADMIN PANEL</span><b>›</b></button><button class="sf-drawer-logout" type="button" data-logout>↪ LOG OUT</button></aside><div class="sf-account-modal-host"></div>';
  document.body.appendChild(layer);
+ const leaveButton=layer.querySelector('[data-logout]');
+ const leaveWrap=document.createElement('div');leaveWrap.className='sf-leave-wrap';
+ leaveButton.before(leaveWrap);leaveWrap.append(leaveButton);
+ const leaveConfirm=document.createElement('div');leaveConfirm.className='sf-leave-confirm';leaveConfirm.hidden=true;
+ leaveConfirm.innerHTML='<strong>ARE YOU SURE?</strong><p>Leave the match and return to the lobby?</p><div class="sf-leave-actions"><button type="button" data-leave-cancel>CANCEL</button><button type="button" data-leave-yes>LEAVE</button></div>';
+ leaveWrap.prepend(leaveConfirm);
+ const hideLeaveConfirm=()=>{leaveConfirm.hidden=true;leaveButton.setAttribute('aria-expanded','false')};
+ leaveButton.setAttribute('aria-expanded','false');
+ leaveConfirm.querySelector('[data-leave-cancel]').onclick=()=>{hideLeaveConfirm();leaveButton.focus()};
+ leaveConfirm.querySelector('[data-leave-yes]').onclick=()=>{hideLeaveConfirm();close();document.dispatchEvent(new Event('sf:leave-gameplay'))};
  let dialogClosing=false;
  const dismissDialog=()=>{if(dialogClosing||!host.childElementCount)return;dialogClosing=true;const overlay=host.querySelector('.sf-account-dialog-shade');overlay?.classList.add('sf-dialog-closing');setTimeout(()=>{host.replaceChildren();dialogClosing=false;if(opened)drawer.querySelector('[data-settings]')?.focus()},145)};
  const shade=layer.querySelector('.sf-account-shade'),drawer=layer.querySelector('.sf-account-drawer'),host=layer.querySelector('.sf-account-modal-host');
  let opened=false,previousFocus=null;
  let gameplayMenu=false;
- const syncMenuMode=()=>{
+ const syncMenuMode=()=>{hideLeaveConfirm();
   gameplayMenu=Boolean(document.querySelector('.sf-gameplay'));
   layer.classList.toggle('sf-gameplay-menu',gameplayMenu);
   layer.querySelector('[data-account]').hidden=gameplayMenu;
@@ -44,10 +54,10 @@ export function installAccountMenu(){
   if(header)header.innerHTML=esc(name)+'<small>LEVEL 1</small>';
  };
  const open=()=>{if(opened)return;syncMenuMode();opened=true;previousFocus=document.activeElement;layer.hidden=false;document.querySelector('.shell')?.setAttribute('inert','');requestAnimationFrame(()=>layer.classList.add('open'));updateSkin();updateProfile();layer.querySelector('[data-close]').focus()};
- const close=()=>{if(!opened)return;opened=false;layer.classList.remove('open');host.replaceChildren();document.querySelector('.shell')?.removeAttribute('inert');setTimeout(()=>{if(!opened)layer.hidden=true},280);previousFocus?.focus()};
+ const close=()=>{if(!opened)return;hideLeaveConfirm();opened=false;layer.classList.remove('open');host.replaceChildren();document.querySelector('.shell')?.removeAttribute('inert');setTimeout(()=>{if(!opened)layer.hidden=true},280);previousFocus?.focus()};
  document.addEventListener('sf:open-game-menu',open);
  trigger.onclick=open;shade.onclick=close;layer.querySelector('[data-close]').onclick=close;
- document.addEventListener('keydown',e=>{if(!opened)return;if(e.key==='Escape'){e.preventDefault();if(host.childElementCount)dismissDialog();else close();return}if(e.key==='Tab'){const area=host.childElementCount?host:drawer;const items=[...area.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(x=>x.getClientRects().length);if(!items.length)return;const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+ document.addEventListener('keydown',e=>{if(!opened)return;if(e.key==='Escape'){e.preventDefault();if(host.childElementCount)dismissDialog();else if(!leaveConfirm.hidden){hideLeaveConfirm();leaveButton.focus()}else close();return}if(e.key==='Tab'){const area=host.childElementCount?host:drawer;const items=[...area.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(x=>x.getClientRects().length);if(!items.length)return;const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
  function dialog(title,body){
   dialogClosing=false;
   host.innerHTML='<div class="sf-account-dialog-shade"><section class="sf-account-dialog" role="dialog" aria-modal="true"><header><div><small>SKYFRONT / ACCOUNT</small><h2>'+esc(title)+'</h2></div><button type="button" data-dismiss aria-label="Close">×</button></header>'+body+'</section></div>';
@@ -92,7 +102,7 @@ export function installAccountMenu(){
   area.addEventListener('change',e=>{const el=e.target.closest('[data-setting]');if(el)updateSettings({[el.dataset.setting]:el.type==='checkbox'?el.checked:el.value})});
   show('audio');
  };
- layer.querySelector('[data-logout]').onclick=async e=>{if(gameplayMenu){close();document.dispatchEvent(new Event('sf:leave-gameplay'));return;}const b=e.currentTarget;b.disabled=true;const {error}=await supabase.auth.signOut();b.disabled=false;if(error){alert(error.message);return}close()};
+ layer.querySelector('[data-logout]').onclick=async e=>{if(gameplayMenu){leaveConfirm.hidden=false;leaveButton.setAttribute('aria-expanded','true');leaveConfirm.querySelector('[data-leave-cancel]').focus();return;}const b=e.currentTarget;b.disabled=true;const {error}=await supabase.auth.signOut();b.disabled=false;if(error){alert(error.message);return}close()};
  window.addEventListener('skyfront:cosmetic-changed',updateSkin);
  window.addEventListener('storage',e=>{if(e.key==='skyfront-locker-v1')updateSkin()});
  supabase.auth.onAuthStateChange(()=>setTimeout(updateProfile,0));
