@@ -37,7 +37,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
  let dropVelocity=0;
 
  const position=new THREE.Vector3(0,1.75,11);
- const movement={stamina:100,exhausted:false,regenDelay:0,crouched:false,crouchBlend:0,bobPhase:0,bobAmount:0,viewY:1.75,roll:0};
+ const movement={stamina:100,exhausted:false,regenDelay:0,crouched:false,crouchBlend:0,bobPhase:0,bobAmount:0,viewY:1.75,roll:0,jumpY:0,jumpVelocity:0,grounded:true};
  const gameHud=mountGameHud(root,{position});
  const inventory=mountInventory({root,scene,position,camera,renderer,onChange:(items,selected)=>gameHud.setInventory(items,selected)});
  const remoteAvatars=new Map();
@@ -87,7 +87,7 @@ let yaw=0,pitch=0;
  const moveVelocity=new THREE.Vector2();
  const forwardVector=new THREE.Vector3();
  const rightVector=new THREE.Vector3();
- const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Matchmaking preview</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · CTRL / C CROUCH · ESC MENU · I INVENTORY</div>';
+ const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Matchmaking preview</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK · WASD MOVE · SPACE JUMP · SHIFT SPRINT · CTRL CROUCH · M MAP</div>';
  root.append(hud);
  const spawnStatus=hud.querySelector('.sf-spawn-status');
  spawnStatus.innerHTML='<strong>SPAWN ISLAND</strong><span class="sf-spawn-countdown">BATTLE BUS IN 25s</span><small class="sf-spawn-online">WAITING FOR PLAYERS</small>';
@@ -118,6 +118,7 @@ let yaw=0,pitch=0;
  };
  const land=()=>{
   phase='landed';phaseClock=0;skydiver.visible=false;
+  movement.jumpY=0;movement.jumpVelocity=0;movement.grounded=true;
   position.set(skydiver.position.x,1.75,skydiver.position.z);
   hud.querySelector('.sf-game-crosshair').hidden=false;
   busBanner.hidden=true;
@@ -129,7 +130,7 @@ let yaw=0,pitch=0;
  document.addEventListener('sf:leave-gameplay',leaveFromMenu);
  const helpTip=hud.querySelector('.sf-game-help');
  const helpFadeTimer=window.setTimeout(()=>{if(alive)helpTip.classList.add('is-fading')},5000);
- const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ControlLeft','ControlRight','KeyC','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+ const movementCodes=['Space','KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ControlLeft','ControlRight','KeyC','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const keydown=e=>{
   if(e.code==='Space'&&phase==='bus'){e.preventDefault();jumpFromBus();return}
   if(e.code==='Escape'){
@@ -139,7 +140,8 @@ let yaw=0,pitch=0;
    // When pointer-locked, Escape unlocks it; lockchange opens the menu.
    return;
   }
-  if(phase==='dropping'&&(e.code==='KeyW'||e.code==='KeyS'||e.code==='KeyA'||e.code==='KeyD')){keys.add(e.code);e.preventDefault();return}
+  if(e.code==='KeyM'&&phase==='landed'){e.preventDefault();gameHud.toggleMap();return}
+  if(phase==='dropping'&&(e.code='KeyW'||e.code==='KeyS'||e.code==='KeyA'||e.code==='KeyD')){keys.add(e.code);e.preventDefault();return}
   if(phase!=='waiting'&&phase!=='landed')return;
   if(movementCodes.includes(e.code)&&!inventory.isOpen&&!document.querySelector('.sf-account-layer.open')){keys.add(e.code);e.preventDefault()}
  };
@@ -154,7 +156,16 @@ let yaw=0,pitch=0;
   if(wasLocked&&!locked&&alive){resetInput();if(!inventory.isOpen)document.dispatchEvent(new Event('sf:open-game-menu'))}
  };
  window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',resetInput);document.addEventListener('visibilitychange',visibilityChange);document.addEventListener('mousemove',mouse);document.addEventListener('pointerlockchange',lockchange);renderer.domElement.addEventListener('click',lock);
- function collides(x,z){return structures.some(b=>Math.abs(x-b.x)<b.w/2+.45&&Math.abs(z-b.z)<b.d/2+.45&&b.h>1)}
+ function collides(x,z){
+  const shapes=phase==='landed'?(battleWorld?.colliders||[]):(disposeScenery.colliders||[]);
+  const radius=.42;
+  return structures.some(b=>Math.abs(x-b.x)<b.w/2+radius&&Math.abs(z-b.z)<b.d/2+radius&&b.h>1)||
+   shapes.some(b=>{
+    if(b.height<=movement.jumpY+.15)return false;
+    if(b.type==='circle')return Math.hypot(x-b.x,z-b.z)<b.radius+radius;
+    return Math.abs(x-b.x)<b.halfX+radius&&Math.abs(z-b.z)<b.halfZ+radius;
+   });
+ }
  function tick(now){
   if(!alive)return;frame=requestAnimationFrame(tick);
   const dt=Math.min((now-last)/1000,.05);last=now;
@@ -225,6 +236,8 @@ let yaw=0,pitch=0;
   }
   if(movement.stamina===0)movement.exhausted=true;
   const speed=movement.crouched?3.05:sprinting?8.15:6.1;
+  if(!blocked&&movement.grounded&&keys.has('Space')&&!movement.crouched){movement.jumpVelocity=5.5;movement.grounded=false}
+  if(!movement.grounded){movement.jumpVelocity-=17*dt;movement.jumpY=Math.max(0,movement.jumpY+movement.jumpVelocity*dt);if(movement.jumpY===0){movement.jumpVelocity=0;movement.grounded=true}}
   gameHud.setStamina(movement.stamina,sprinting,movement.exhausted);
   movement.crouchBlend=THREE.MathUtils.damp(movement.crouchBlend,movement.crouched?1:0,11,dt);
   forwardVector.set(-Math.sin(yaw),0,-Math.cos(yaw));
@@ -248,7 +261,7 @@ let yaw=0,pitch=0;
   const bobSide=Math.cos(movement.bobPhase)*0.015*movement.bobAmount*(movement.crouched?.5:1);
   movement.viewY=THREE.MathUtils.damp(movement.viewY,1.75-movement.crouchBlend*0.63,12,dt);
   movement.roll=THREE.MathUtils.damp(movement.roll,-strafe*0.011*(movement.crouched?.6:1),9,dt);
-  camera.position.set(position.x+bobSide,movement.viewY+bobVertical,position.z);
+  camera.position.set(position.x+bobSide,movement.viewY+bobVertical+movement.jumpY,position.z);
   camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,movement.roll);
   renderer.render(scene,camera);
  }
