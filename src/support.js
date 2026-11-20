@@ -3,7 +3,7 @@ import './support.css';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const categories={
- account:{title:'ACCOUNT HELP',icon:'◉',desc:'Login, security or account access',fields:[['issue','WHAT DO YOU NEED HELP WITH?','select',['Login problem','Email change','Account access','Other account issue']],['platform','PLATFORM','select',['PC / Browser','Mobile','Other']]},
+ account:{title:'ACCOUNT HELP',icon:'◉',desc:'Login, security or account access',fields:[['issue','WHAT DO YOU NEED HELP WITH?','select',['Login problem','Email change','Account access','Other account issue']],['platform','PLATFORM','select',['PC / Browser','Mobile','Other']]]},
  bug:{title:'REPORT A BUG',icon:'⚒',desc:'Something not working as expected',fields:[['area','WHERE DOES IT HAPPEN?','select',['Lobby','Locker','Shop','Gameplay','Party / Friends','Other']],['steps','STEPS TO REPRODUCE','textarea']]},
  suggestion:{title:'SUGGESTION',icon:'✦',desc:'Share an idea for SKYFRONT',fields:[['area','FEATURE AREA','select',['Gameplay','UI / Design','Cosmetics','Social / Party','Other']],['benefit','WHY WOULD THIS HELP?','textarea']]},
  other:{title:'OTHER',icon:'☰',desc:'Anything else you need help with',fields:[['topic','TOPIC','input']]}
