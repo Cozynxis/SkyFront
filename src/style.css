@@ -226,3 +226,26 @@ body.sf-on-play .sf-lobby-player small{font-size:10px}
 .sf-lobby-player.sf-lobby-departing{pointer-events:none;animation:sfPartyLeave .38s ease forwards}
 @keyframes sfPartyLeave{to{opacity:0;transform:translateY(25px) scale(.85)}}
 @media(max-width:700px){.sf-lobby-player .sf-lobby-character{width:clamp(64px,16vw,110px);height:clamp(110px,22vh,190px)}}
+
+/* Final lobby override: remove old capsule background even under body.sf-on-play selectors. */
+body.sf-on-play .sf-lobby-scene .sf-lobby-player .sf-lobby-silhouette.sf-lobby-character{
+  width:clamp(165px,15vw,260px);
+  height:clamp(230px,36vh,390px);
+  display:block;
+  padding:0;
+  margin:0 auto -8px;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  background-image:none!important;
+  box-shadow:none!important;
+  outline:0!important;
+  overflow:visible;
+}
+body.sf-on-play .sf-lobby-scene .sf-lobby-player .sf-lobby-character::before,
+body.sf-on-play .sf-lobby-scene .sf-lobby-player .sf-lobby-character::after{display:none!important}
+body.sf-on-play .sf-lobby-character canvas.sf-character-canvas{display:block;width:100%;height:100%;background:transparent!important}
+@media(max-width:700px){
+ body.sf-on-play .sf-lobby-scene .sf-lobby-player .sf-lobby-silhouette.sf-lobby-character{
+ width:clamp(105px,21vw,160px);height:clamp(160px,29vh,260px)}
+}
