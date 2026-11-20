@@ -4,11 +4,13 @@ import {supabase} from './community.js';
 import {buildSpawnScenery} from './spawn-scenery.js';
 import {mountGameHud} from './game-hud.js';
 import {mountInventory} from './inventory.js';
+import {buildBattleRoyaleWorld} from './battle-royale-world.js';
+import {createBattleBus} from './battle-bus.js';
 
 export function mountGameplay(root,{onExit=()=>{}}={}){
  let alive=true,frame=0,locked=false,phase='waiting',countdown=25,phaseClock=0,partyChannel=null,partyId=null,playerId=null,partyRoster=[],lastRosterUpdate=0;
- const scene=new THREE.Scene();scene.background=new THREE.Color('#8bc8ed');scene.fog=new THREE.Fog('#8bc8ed',38,150);
- const camera=new THREE.PerspectiveCamera(75,1,.1,250);
+ const scene=new THREE.Scene();scene.background=new THREE.Color('#8bc8ed');scene.fog=new THREE.Fog('#8bc8ed',110,1850);
+ const camera=new THREE.PerspectiveCamera(75,1,.1,2800);
  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'low-power'});
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
  renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -24,7 +26,15 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,roughness:.82}));
   mesh.position.set(x,h/2,z);scene.add(mesh);structures.push({x,z,w,d,h});
  }
- const disposeScenery=buildSpawnScenery(scene);
+ let disposeScenery=buildSpawnScenery(scene);
+ let battleWorld=null,busFlight=null,flightAngle=0,flightStart=new THREE.Vector3(),flightEnd=new THREE.Vector3();
+ const busAsset=createBattleBus();const bus=busAsset.group;bus.visible=false;scene.add(bus);
+ const skydiver=new THREE.Group();skydiver.visible=false;scene.add(skydiver);
+ const diverMat=new THREE.MeshStandardMaterial({color:'#ffd06d'});
+ const diverHead=new THREE.Mesh(new THREE.SphereGeometry(.5,12,8),diverMat);diverHead.position.y=1.7;skydiver.add(diverHead);
+ const diverBody=new THREE.Mesh(new THREE.CapsuleGeometry(.55,1.25,4,8),new THREE.MeshStandardMaterial({color:'#1977c7'}));diverBody.position.y=.6;skydiver.add(diverBody);
+ const glider=new THREE.Mesh(new THREE.ConeGeometry(5,1.8,4),new THREE.MeshStandardMaterial({color:'#5bd5ff',side:THREE.DoubleSide}));glider.rotation.z=Math.PI;glider.position.y=5;skydiver.add(glider);
+ let dropVelocity=0;
 
  const position=new THREE.Vector3(0,1.75,11);
  const movement={stamina:100,exhausted:false,regenDelay:0,crouched:false,crouchBlend:0,bobPhase:0,bobAmount:0,viewY:1.75,roll:0};
@@ -77,18 +87,41 @@ let yaw=0,pitch=0;
  const moveVelocity=new THREE.Vector2();
  const forwardVector=new THREE.Vector3();
  const rightVector=new THREE.Vector3();
- const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · CTRL / C CROUCH · ESC MENU · I INVENTORY</div>';
+ const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Matchmaking preview</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · CTRL / C CROUCH · ESC MENU · I INVENTORY</div>';
  root.append(hud);
  const spawnStatus=hud.querySelector('.sf-spawn-status');
  spawnStatus.innerHTML='<strong>SPAWN ISLAND</strong><span class="sf-spawn-countdown">BATTLE BUS IN 25s</span><small class="sf-spawn-online">WAITING FOR PLAYERS</small>';
  const countdownLabel=spawnStatus.querySelector('.sf-spawn-countdown'),onlineLabel=spawnStatus.querySelector('.sf-spawn-online');
- const bus=new THREE.Group();bus.visible=false;scene.add(bus);
- const busBody=new THREE.Mesh(new THREE.BoxGeometry(5,2.3,2.6),new THREE.MeshStandardMaterial({color:'#278bda',roughness:.55}));bus.add(busBody);
- const balloon=new THREE.Mesh(new THREE.SphereGeometry(3.6,20,14),new THREE.MeshStandardMaterial({color:'#60c9f6',roughness:.7}));balloon.position.y=5.2;bus.add(balloon);
- const ropes=new THREE.MeshStandardMaterial({color:'#e8e3c8'});
- for(const x of [-1.7,1.7])for(const z of [-.8,.8]){const rope=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,4.5,5),ropes);rope.position.set(x,2.8,z);bus.add(rope)}
- bus.position.set(-60,22,-35);
- const busBanner=document.createElement('div');busBanner.className='sf-bus-banner';busBanner.hidden=true;busBanner.innerHTML='<strong>THE BATTLE BUS IS HERE!</strong><span>Battle Royale map coming soon · Spawn Island preview</span>';hud.append(busBanner);
+ gameHud.setMode('spawn');
+ const busBanner=document.createElement('div');busBanner.className='sf-bus-banner';busBanner.hidden=true;busBanner.innerHTML='<strong>THE BATTLE BUS</strong><span>SPACE · JUMP TO THE ISLAND</span>';hud.append(busBanner);
+ const startFlight=()=>{
+  phase='bus';phaseClock=0;bus.visible=true;
+  if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
+  // The large map replaces Spawn Island; all existing player inventory persists.
+  disposeScenery();disposeScenery=()=>{};
+  scene.remove(ground,landing,stripe,ocean);
+  battleWorld=buildBattleRoyaleWorld(scene);
+  scene.fog=new THREE.Fog('#8bc8ed',300,2000);
+  flightAngle=Math.random()*Math.PI*2;
+  flightStart.set(Math.cos(flightAngle)*1040,155,Math.sin(flightAngle)*1040);
+  flightEnd.set(-flightStart.x,155,-flightStart.z);
+  bus.rotation.y=Math.atan2(flightEnd.x-flightStart.x,flightEnd.z-flightStart.z)+Math.PI;
+  spawnStatus.hidden=true;busBanner.hidden=false;
+  gameHud.setMode('battle');gameHud.setState({seconds:0});
+ };
+ const jumpFromBus=()=>{
+  if(phase!=='bus')return;
+  phase='dropping';phaseClock=0;busBanner.hidden=true;bus.visible=false;
+  skydiver.visible=true;skydiver.position.copy(bus.position);dropVelocity=0;
+  position.x=skydiver.position.x;position.z=skydiver.position.z;
+  hud.querySelector('.sf-game-crosshair').hidden=true;
+ };
+ const land=()=>{
+  phase='landed';phaseClock=0;skydiver.visible=false;
+  position.set(skydiver.position.x,1.75,skydiver.position.z);
+  hud.querySelector('.sf-game-crosshair').hidden=false;
+  busBanner.hidden=true;
+ };
  void loadParty();
 
  const exit=()=>{dispose();onExit()};
@@ -98,6 +131,7 @@ let yaw=0,pitch=0;
  const helpFadeTimer=window.setTimeout(()=>{if(alive)helpTip.classList.add('is-fading')},5000);
  const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ControlLeft','ControlRight','KeyC','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const keydown=e=>{
+  if(e.code==='Space'&&phase==='bus'){e.preventDefault();jumpFromBus();return}
   if(e.code==='Escape'){
    if(inventory.isOpen){e.preventDefault();inventory.close();return}
    resetInput();
@@ -105,6 +139,7 @@ let yaw=0,pitch=0;
    // When pointer-locked, Escape unlocks it; lockchange opens the menu.
    return;
   }
+  if(phase!=='waiting'&&phase!=='landed')return;
   if(movementCodes.includes(e.code)&&!inventory.isOpen&&!document.querySelector('.sf-account-layer.open')){keys.add(e.code);e.preventDefault()}
  };
  const keyup=e=>keys.delete(e.code);
@@ -124,10 +159,46 @@ let yaw=0,pitch=0;
   const dt=Math.min((now-last)/1000,.05);last=now;
   lastRosterUpdate+=dt;if(lastRosterUpdate>4){lastRosterUpdate=0;void loadParty()}
   phaseClock+=dt;
-  if(phase==='waiting'){countdown=Math.max(0,countdown-dt);gameHud.setState({seconds:countdown});countdownLabel.textContent='BATTLE BUS IN '+Math.ceil(countdown)+'s';if(countdown<=0){phase='bus';phaseClock=0;bus.visible=true;busBanner.hidden=false;spawnStatus.querySelector('strong').textContent='BATTLE BUS ARRIVING';countdownLabel.textContent='SPAWN ISLAND PREVIEW'}}
-  if(phase==='bus'){bus.position.x=-60+Math.min(120,phaseClock*12);bus.position.y=22+Math.sin(phaseClock*.9)*1.2;bus.rotation.y=.1;if(phaseClock>11){phase='complete';bus.visible=false;spawnStatus.querySelector('strong').textContent='SPAWN ISLAND';countdownLabel.textContent='BATTLE ROYALE MAP COMING SOON'}}
+  if(phase==='waiting'){
+   countdown=Math.max(0,countdown-dt);
+   countdownLabel.textContent='MATCH STARTING IN '+Math.ceil(countdown)+'s';
+   if(countdown<=0){
+    phase='ready';phaseClock=0;countdown=10;
+    spawnStatus.querySelector('strong').textContent='MAKE YOURSELF READY!';
+    onlineLabel.textContent='THE BATTLE BUS IS COMING';
+   }
+  }else if(phase==='ready'){
+   countdown=Math.max(0,10-phaseClock);
+   countdownLabel.textContent='DEPARTING IN '+Math.ceil(countdown)+'s';
+   if(countdown<=0)startFlight();
+  }else if(phase==='bus'){
+   const progress=Math.min(1,phaseClock/29);
+   bus.position.lerpVectors(flightStart,flightEnd,progress);
+   bus.position.y=155+Math.sin(phaseClock*.8)*1.6;
+   busAsset.update(phaseClock);
+   const behind=new THREE.Vector3(Math.sin(bus.rotation.y)*-23,12,Math.cos(bus.rotation.y)*-23);
+   camera.position.copy(bus.position).add(behind);
+   camera.lookAt(bus.position.x,bus.position.y+3,bus.position.z);
+   if(progress>=1)jumpFromBus();
+  }else if(phase==='dropping'){
+   const glide=keys.has('KeyW')?30:keys.has('KeyS')?-14:0;
+   skydiver.position.x+=Math.sin(flightAngle+Math.PI)*glide*dt;
+   skydiver.position.z+=Math.cos(flightAngle+Math.PI)*glide*dt;
+   skydiver.position.x=THREE.MathUtils.clamp(skydiver.position.x,-735,735);
+   skydiver.position.z=THREE.MathUtils.clamp(skydiver.position.z,-735,735);
+   dropVelocity=Math.min(24,dropVelocity+13*dt);
+   skydiver.position.y=Math.max(0,skydiver.position.y-dropVelocity*dt);
+   camera.position.lerp(new THREE.Vector3(skydiver.position.x+14,skydiver.position.y+9,skydiver.position.z+20),1-Math.exp(-3*dt));
+   camera.lookAt(skydiver.position.x,skydiver.position.y+2,skydiver.position.z);
+   if(skydiver.position.y<=0)land();
+  }else if(phase==='landed'){
+   gameHud.setState({seconds:phaseClock});
+  }
   const width=root.clientWidth,height=root.clientHeight;
   if(width&&height){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}
+  if(phase==='bus'||phase==='dropping'){
+   gameHud.updatePosition();renderer.render(scene,camera);return;
+  }
   // Camera-relative movement: W goes where the camera faces, A goes left.
   // Derive horizontal directions from the camera's yaw to avoid reversed strafing.
   const forward=inventory.isOpen||document.querySelector('.sf-account-layer.open')?0:Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
@@ -162,7 +233,7 @@ let yaw=0,pitch=0;
   const dx=moveVelocity.x*dt,dz=moveVelocity.y*dt;
   if(!collides(position.x+dx,position.z))position.x+=dx;else moveVelocity.x=0;
   if(!collides(position.x,position.z+dz))position.z+=dz;else moveVelocity.y=0;
-  const radius=Math.hypot(position.x,position.z);if(radius>68){position.x*=68/radius;position.z*=68/radius}
+  const radius=Math.hypot(position.x,position.z);const limit=phase==='landed'?750:68;if(radius>limit){position.x*=limit/radius;position.z*=limit/radius}
   inventory.update(dt);
   gameHud.updatePosition();
   const actualSpeed=moveVelocity.length();
@@ -185,7 +256,7 @@ let yaw=0,pitch=0;
   window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',resetInput);document.removeEventListener('visibilitychange',visibilityChange);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
   if(partyChannel)void supabase.removeChannel(partyChannel);
-  disposeScenery();
+  disposeScenery();battleWorld?.dispose();busAsset.dispose();
   inventory.dispose();
   gameHud.dispose();
   renderer.dispose();renderer.domElement.remove();hud.remove();
