@@ -109,6 +109,7 @@ export async function openLobbyNewsAdmin(){
 }
 function closeAdmin(){adminOpen=false;adminPage='news';if(adminHost){adminHost.style.display='';adminHost.replaceChildren()}}
 export function installLobbyNews(){
+ window.addEventListener('skyfront:support-admin-closed',()=>{if(adminOpen&&adminHost){adminPage='news';adminHost.style.display='';renderAdmin()}});
  fetchNews();refresh=setInterval(fetchNews,20000);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(rotation);else{fetchNews();schedule()}});
  supabase.channel('sf-lobby-news').on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_announcements'},fetchNews).on('postgres_changes',{event:'*',schema:'public',table:'sf_lobby_news_config'},fetchNews).subscribe();
