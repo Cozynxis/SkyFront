@@ -1,4 +1,5 @@
 import './game-hud.css';
+import {BR_PLACES} from './battle-royale-world.js';
 
 // HUD is driven by game state, not hard-coded HTML updates.
 export function mountGameHud(parent,{position,worldRadius=72}={}){
@@ -32,7 +33,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  parent.append(el);
  const canvas=el.querySelector('canvas'),ctx=canvas.getContext('2d');
  const slots=[...el.querySelectorAll('[data-slot]')];
- let active=0,health=100,shield=0,kills=0,players=1,seconds=25;
+ let active=0,health=100,shield=0,kills=0,players=1,seconds=25,mode='spawn';
  const staminaWrap=el.querySelector('[data-hud-stamina-wrap]');
  const staminaBar=el.querySelector('[data-hud-stamina-bar]');
  let staminaVisibleUntil=0;
@@ -57,6 +58,23 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  slots.forEach((slot,i)=>slot.addEventListener('click',()=>choose(i)));
  function drawMap(){
   if(!ctx)return;
+  if(mode==='battle'){
+   const size=240,c=120,scale=108/790;
+   ctx.clearRect(0,0,size,size);ctx.fillStyle='#1e709c';ctx.fillRect(0,0,size,size);
+   ctx.beginPath();ctx.arc(c,c,113,0,Math.PI*2);ctx.fillStyle='#d8c68e';ctx.fill();
+   ctx.beginPath();ctx.arc(c,c,109,0,Math.PI*2);ctx.fillStyle='#72ae66';ctx.fill();
+   ctx.fillStyle='#8d9696';ctx.fillRect(c-2,c-93,4,186);ctx.fillRect(c-93,c-2,186,4);
+   for(const p of BR_PLACES){
+    const x=c+p.x*scale,z=c+p.z*scale;
+    ctx.fillStyle='#d1c5ac';ctx.fillRect(x-11,z-11,22,22);
+    ctx.fillStyle='#526f85';for(let i=0;i<4;i++)ctx.fillRect(x-8+(i%2)*9,z-8+Math.floor(i/2)*9,7,7);
+   }
+   const x=c+(position?.x||0)*scale,z=c+(position?.z||0)*scale;
+   ctx.fillStyle='#122c49';ctx.beginPath();ctx.arc(x,z,7,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,z,4.5,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#45d6ff';ctx.beginPath();ctx.arc(x,z,2.8,0,Math.PI*2);ctx.fill();
+   return;
+  }
   const size=240,c=120,scale=1.57;
   ctx.clearRect(0,0,size,size);
   const water=ctx.createLinearGradient(0,0,240,240);
@@ -99,6 +117,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  update();drawMap();
  let lastX=NaN,lastZ=NaN;
  return {
+  setMode(next){mode=next;el.classList.toggle('sf-hud-spawn',next==='spawn');el.classList.toggle('sf-hud-battle',next==='battle');el.querySelector('.sf-hud-location').textContent=next==='battle'?'BATTLE ROYALE':'SPAWN ISLAND';drawMap()},
   setStamina(value,sprinting,exhausted){
    if(!staminaWrap||!staminaBar)return;
    const amount=Math.max(0,Math.min(100,value));
