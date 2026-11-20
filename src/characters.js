@@ -76,3 +76,23 @@ export function mountCharacterPreview(host,name='Jaxon'){
  frame=requestAnimationFrame(tick);
  return()=>{disposed=true;cancelAnimationFrame(frame);renderer.domElement.removeEventListener('pointerdown',down);renderer.domElement.removeEventListener('pointermove',move);renderer.domElement.removeEventListener('pointerup',up);renderer.domElement.removeEventListener('pointercancel',up);renderer.dispose();renderer.domElement.remove();label.remove();};
 }
+
+const thumbnailCache=new Map();
+export function getSkinThumbnail(name){return thumbnailCache.get(name)||null}
+export async function generateSkinThumbnail(name){
+ if(thumbnailCache.has(name))return thumbnailCache.get(name);
+ const avatar=await createSkyfrontCharacter(name);
+ const scene=new THREE.Scene();
+ scene.add(avatar);scene.add(new THREE.HemisphereLight(0xffffff,0x345078,2.7));
+ const light=new THREE.DirectionalLight(0xffffff,3);light.position.set(-3,5,6);scene.add(light);
+ const camera=new THREE.PerspectiveCamera(35,1,.1,100);
+ camera.position.set(0,1.7,7.3);camera.lookAt(0,1.6,0);
+ const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});
+ renderer.setSize(220,220);renderer.setPixelRatio(1);
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.render(scene,camera);
+ const url=renderer.domElement.toDataURL('image/png');
+ renderer.dispose();thumbnailCache.set(name,url);
+ window.dispatchEvent(new CustomEvent('skyfront:skin-thumbnail',{detail:{name,url}}));
+ return url;
+}
