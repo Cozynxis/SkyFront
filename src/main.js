@@ -5,7 +5,7 @@ import { mountLocker, unmountLocker, getEquippedSkinName } from './locker.js';
 import { mountCharacterPreview } from './characters.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
-import { installAudio, readSettings, playReadySound } from './audio.js';
+import { installAudio, readSettings, playReadySound, stopLobbyMusic, resumeLobbyMusic } from './audio.js';
 import { mountCareer } from './career.js';
 import { mountCommunity } from './community.js';
 import { installAuthGate } from './auth.js';
@@ -166,11 +166,12 @@ function initModeSelector(){
   const partySize=(window.__sfPartyMembers||[]).length||1;
   let cancelLoad=()=>{};
   cancelLoad=showLoadingScreen({team:selectedTeam,fill:fillMode,partySize,onCancel:()=>{playButton.disabled=false},onReady:()=>{
-   if(current!=='play')return;
+   if(current!=='play'){playButton.disabled=false;return;}
+   stopLobbyMusic();
    const gameplayRoot=document.createElement('div');gameplayRoot.className='sf-gameplay';document.body.append(gameplayRoot);
    document.dispatchEvent(new Event('sf:leave-play'));
-   const cleanup=mountGameplay(gameplayRoot,{onExit:()=>{gameplayRoot.remove();playButton.disabled=false;document.dispatchEvent(new Event('sf:return-play'))}});
-   pageEvents.signal.addEventListener('abort',()=>{cleanup();gameplayRoot.remove()},{once:true});
+   const cleanup=mountGameplay(gameplayRoot,{onExit:()=>{gameplayRoot.remove();playButton.disabled=false;resumeLobbyMusic();document.dispatchEvent(new Event('sf:return-play'))}});
+   pageEvents.signal.addEventListener('abort',()=>{cleanup();gameplayRoot.remove();resumeLobbyMusic()},{once:true});
   }});
   pageEvents.signal.addEventListener('abort',cancelLoad,{once:true});
  },{signal:pageEvents.signal});
