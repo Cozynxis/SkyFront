@@ -32,9 +32,52 @@ export async function createSkyfrontCharacter(name='Jaxon'){
  model.position.y-=scaled.min.y;
  return model;
 }
+// Pose rigged FBX characters without requiring an external animation file.
+// If a model has no shoulder/arm bones, it remains in its imported bind pose.
+function makeIdleRig(model){
+ const bones=[];
+ model.traverse(node=>{if(node.isBone)bones.push(node)});
+ const find=(side,part)=>{
+  const patterns={
+   upper:/upperarm|uparm|arm[_ .-]?(l|r)|shoulder/i,
+   lower:/forearm|lowerarm|loarm|elbow/i,
+   head:/head/i,
+   spine:/spine|chest/i
+  };
+  const sidePattern=side==='left'?/(left|[_ .-]l(?:$|[_ .-])|\.l$)/i:/(right|[_ .-]r(?:$|[_ .-])|\.r$)/i;
+  return bones.find(b=>patterns[part].test(b.name)&&sidePattern.test(b.name)&&!(part==='upper'&&/fore|lower|hand|finger/i.test(b.name)));
+ };
+ const neck=bones.find(b=>/neck/i.test(b.name));
+ const head=bones.find(b=>/head/i.test(b.name));
+ const chest=bones.find(b=>/chest|spine2|spine_02|upperbody/i.test(b.name));
+ const armBones=[];
+ for(const side of ['left','right']){
+  const upper=find(side,'upper'),lower=find(side,'lower');
+  if(upper)armBones.push({bone:upper,side,kind:'upper',rest:upper.quaternion.clone()});
+  if(lower)armBones.push({bone:lower,side,kind:'lower',rest:lower.quaternion.clone()});
+ }
+ const restHead=head?.quaternion.clone(),restNeck=neck?.quaternion.clone(),restChest=chest?.quaternion.clone();
+ const target=new THREE.Quaternion(),axis=new THREE.Vector3(),desired=new THREE.Vector3();
+ const pose=(t,dt)=>{
+  const ease=1-Math.exp(-Math.min(dt,.05)*5);
+  // Arms rest near the torso; elbows bend slightly forward, like a relaxed game lobby stance.
+  for(const part of armBones){
+   const sign=part.side==='left'?-1:1;
+   const angle=part.kind==='upper'?(sign*.93+Math.sin(t*1.3+sign)*.018):(sign*-.24+Math.sin(t*1.1+sign)*.025);
+   axis.set(0,0,1);
+   target.setFromAxisAngle(axis,angle);
+   target.multiply(part.rest);
+   part.bone.quaternion.slerp(target,ease);
+  }
+  if(chest&&restChest){target.setFromEuler(new THREE.Euler(Math.sin(t*1.35)*.012,Math.sin(t*.58)*.025,Math.sin(t*.88)*.009));target.multiply(restChest);chest.quaternion.slerp(target,ease)}
+  if(neck&&restNeck){target.setFromEuler(new THREE.Euler(Math.sin(t*.74)*.018,Math.sin(t*.57)*.045,0));target.multiply(restNeck);neck.quaternion.slerp(target,ease)}
+  if(head&&restHead){target.setFromEuler(new THREE.Euler(Math.sin(t*.74)*.018,Math.sin(t*.57)*.04,0));target.multiply(restHead);head.quaternion.slerp(target,ease)}
+ };
+ return pose;
+}
 export function mountCharacterPreview(host,name='Jaxon',options={}){
  if(!host)return()=>{};
- let disposed=false,frame=0,renderer,avatar=null,angle=0,dragging=false,lastX=0;
+ let disposed=false,frame=0,renderer,avatar=null,angle=0,dragging=false,lastX=0,idleRig=null,lastTime=0;
  const lobby=Boolean(options.lobby),interactive=!lobby;
  const scene=new THREE.Scene();
  const camera=new THREE.PerspectiveCamera(35,1,.1,100);
@@ -52,7 +95,7 @@ export function mountCharacterPreview(host,name='Jaxon',options={}){
  const rim=new THREE.DirectionalLight(0x7fc8ff,2.3);rim.position.set(3,5,-4);scene.add(rim);
  createSkyfrontCharacter(name).then(object=>{
   if(disposed)return;
-  avatar=object;scene.add(avatar);label.remove();
+  avatar=object;scene.add(avatar);idleRig=makeIdleRig(avatar);label.remove();
  }).catch(error=>{if(!disposed){label.textContent='MODEL NOT FOUND · '+name.toUpperCase();label.title=String(error);}});
  const down=e=>{dragging=true;lastX=e.clientX;renderer.domElement.setPointerCapture(e.pointerId)};
  const move=e=>{if(dragging){angle+=(e.clientX-lastX)*.012;lastX=e.clientX}};
@@ -71,7 +114,13 @@ export function mountCharacterPreview(host,name='Jaxon',options={}){
    if(w&&h){camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
   }
   if(!w||!h)return;
-  if(avatar){const t=now*.001; if(!dragging&&!lobby)angle+=.0012;avatar.rotation.y=angle+Math.sin(t*.65)*.055;avatar.rotation.z=Math.sin(t*.95)*.009;avatar.position.y=Math.sin(t*1.65)*.028;}
+  if(avatar){
+   const t=now*.001,dt=lastTime?Math.min(.05,t-lastTime):.016;lastTime=t;
+   idleRig?.(t,dt);
+   avatar.rotation.y=angle+Math.sin(t*.52)*.018;
+   avatar.rotation.z=Math.sin(t*.78)*.004;
+   avatar.position.y=Math.sin(t*1.45)*.012;
+  }
   renderer.render(scene,camera);
  }
  frame=requestAnimationFrame(tick);
