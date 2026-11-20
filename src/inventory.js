@@ -23,12 +23,16 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
  <div class="sf-pickup-hint" hidden><kbd>E</kbd><div><strong>PICK UP</strong><span>TRAINING RIFLE · RARE</span></div></div>
  <div class="sf-inventory-backdrop" hidden></div>
  <section class="sf-inventory-panel" role="dialog" aria-label="Inventory" aria-modal="true" hidden>
-  <header><div><small>SKYFRONT / LOADOUT</small><h2>INVENTORY</h2></div><button type="button" data-close aria-label="Close inventory">✕</button></header>
+  <header><div><small>SKYFRONT / EQUIPMENT</small><h2>INVENTORY</h2></div><button type="button" data-close aria-label="Close inventory">✕</button></header>
   <div class="sf-inventory-body">
-   <div class="sf-inventory-left"><h3>EQUIPMENT <span>6 SLOTS</span></h3><div class="sf-inventory-grid"></div><p>CLICK TWO SLOTS TO SWAP · DRAG TO REARRANGE</p></div>
-   <aside class="sf-inventory-detail"><small>SELECTED ITEM</small><div class="sf-inventory-art">⛏</div><div class="sf-inventory-rarity">COMMON</div><h3 class="sf-inventory-name">PICKAXE</h3><p class="sf-inventory-description"></p><div class="sf-inventory-stats"></div><button type="button" data-drop>DROP ITEM</button><span class="sf-inventory-drop-note">Pickaxe cannot be dropped</span></aside>
+   <aside class="sf-inventory-detail"><div class="sf-inventory-rarity">COMMON · EQUIPMENT</div><h3 class="sf-inventory-name">PICKAXE</h3><p class="sf-inventory-description"></p><div class="sf-inventory-stats"></div><div class="sf-inventory-art" aria-hidden="true">⛏</div></aside>
+   <div class="sf-inventory-right">
+    <div class="sf-inventory-section"><h3>TRAPS &amp; RESOURCES</h3><div class="sf-inventory-resources"><div class="sf-inventory-resource"><span>▥</span><b>0</b></div><div class="sf-inventory-resource"><span>▦</span><b>0</b></div><div class="sf-inventory-resource"><span>▤</span><b>0</b></div></div></div>
+    <div class="sf-inventory-section"><h3>AMMO</h3><div class="sf-inventory-resources"><div class="sf-inventory-resource"><span>▰</span><b>0</b></div><div class="sf-inventory-resource"><span>◈</span><b>0</b></div><div class="sf-inventory-resource"><span>◆</span><b>0</b></div></div></div>
+    <div class="sf-inventory-section sf-inventory-equipment"><h3>EQUIPMENT</h3><div class="sf-inventory-grid"></div><p>DRAG OR SELECT TWO SLOTS TO SWAP ITEMS</p></div>
+   </div>
   </div>
-  <footer><span><kbd>I</kbd> CLOSE</span><span><kbd>V</kbd> HOLD TO INSPECT</span><span><kbd>1–6</kbd> SELECT SLOT</span></footer>
+  <footer><button type="button" data-drop>DROP ITEM</button><span class="sf-inventory-drop-note"></span><span><kbd>V</kbd> INSPECT</span><span><kbd>E</kbd> CLOSE</span><span><kbd>ESC</kbd> BACK</span></footer>
  </section>
  <div class="sf-inventory-inspect" hidden><small>ITEM INSPECTION · HOLD V</small><div class="sf-inspect-icon"></div><h2 class="sf-inspect-name"></h2><div class="sf-inspect-info"></div><span>RELEASE V TO RETURN</span></div>`;
  root.append(ui);
@@ -50,12 +54,13 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
    grid.append(b);
   });
   const item=slots[selected];detail.querySelector('.sf-inventory-art').textContent=itemIcon(item)||'+';
-  detail.querySelector('.sf-inventory-rarity').textContent=item?.rarity?.toUpperCase()||'EMPTY SLOT';
+  detail.dataset.rarity=item?.rarity||'empty';
+  detail.querySelector('.sf-inventory-rarity').textContent=item?(item.rarity.toUpperCase()+' · '+(item.kind==='rifle'?'RANGED WEAPON':'EQUIPMENT')):'EMPTY SLOT';
   detail.querySelector('.sf-inventory-name').textContent=item?.name||'NO ITEM SELECTED';
   detail.querySelector('.sf-inventory-description').textContent=item?.description||'Select an item to see its details.';
   detail.querySelector('.sf-inventory-stats').innerHTML=statsHTML(item);
-  detail.querySelector('[data-drop]').disabled=!item||item.kind==='pickaxe';
-  detail.querySelector('.sf-inventory-drop-note').textContent=item?.kind==='pickaxe'?'Pickaxe cannot be dropped':item?'Drop this item on Spawn Island':'No item in this slot';
+  panel.querySelector('[data-drop]').disabled=!item||item.kind==='pickaxe';
+  panel.querySelector('.sf-inventory-drop-note').textContent=item?.kind==='pickaxe'?'Pickaxe cannot be dropped':item?'Drop this item on Spawn Island':'No item in this slot';
   onChange(slots.map(x=>x?{...x}:null),selected);
  }
  let swapFrom=null;
@@ -89,7 +94,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
  const down=e=>{
   if(isEditing()||isPaused()||e.ctrlKey||e.altKey||e.metaKey)return;
   if(e.code==='KeyI'||e.code==='Tab'){e.preventDefault();if(!e.repeat)toggle();return}
-  if(e.code==='KeyE'&&!opened&&!e.repeat){if(pickup())e.preventDefault();return}
+  if(e.code==='KeyE'&&!e.repeat){e.preventDefault();if(opened)close();else if(!pickup())open();return}
   if(e.code==='KeyV'&&!e.repeat){holdTimer=setTimeout(startInspect,220);return}
   if(/^Digit[1-6]$/.test(e.code)&&!e.repeat){selected=Number(e.code.slice(-1))-1;swapFrom=null;render()}
  };
