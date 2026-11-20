@@ -11,8 +11,10 @@ const key='skyfront-locker-v1';
 let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}
 const equipped=Object.fromEntries(categories.map(c=>[c.id,c.items.includes(saved[c.id])?saved[c.id]:c.items[0]]));
 let animateView=true;
-let section='you',view='overview',active='skin',selected=equipped.skin,search='',sort='default',favoritesOnly=false;
+let section='you',view='overview',active='skin',selected=equipped.skin,search='',sort='default',favoritesOnly=false,equippedOnly=false;
 let favorites={};try{favorites=JSON.parse(localStorage.getItem('skyfront-locker-favorites')||'{}')||{}}catch{}
+const isFavorite=(category,item)=>Boolean(favorites[category+':'+item]);
+function toggleFavorite(category,item){const k=category+':'+item;if(isFavorite(category,item))delete favorites[k];else favorites[k]=true;localStorage.setItem('skyfront-locker-favorites',JSON.stringify(favorites));}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cat=()=>categories.find(c=>c.id===active);
 const save=()=>{localStorage.setItem(key,JSON.stringify(equipped));window.dispatchEvent(new CustomEvent('skyfront:cosmetic-changed',{detail:{...equipped}}));};
@@ -68,20 +70,22 @@ function emoteMarkup(){
 }
 
 function tile(item,index,c){
+ const fav=isFavorite(c.id,item);
  const chosen=selected===item,eq=equipped[active]===item;
  return `<button type="button" class="sf-cosmetic ${chosen?'is-selected':''}" data-item="${esc(item)}" aria-pressed="${chosen}" title="${esc(item)}" style="--tile-color:${colors[index%colors.length]}">
  <span class="sf-cosmetic-art" aria-hidden="true">${cosmeticArt(c.id,item,index)}</span>
  <span class="sf-cosmetic-name">${esc(item)}</span>
- ${eq?'<span class="sf-equipped">✓</span>':''}</button>`;
+ ${eq?'<span class="sf-equipped">✓</span>':''}<span class="sf-card-favorite ${fav?'is-favorite':''}" data-favorite-item="${esc(item)}" role="button" tabindex="0" aria-label="${fav?'Remove from favorites':'Add to favorites'}" title="${fav?'Remove favorite':'Add favorite'}">${fav?'♥':'♡'}</span></button>`;
 }
 
-function openCategory(id){animateView=true;active=id;selected=equipped[id];search='';sort='default';favoritesOnly=false;view='inventory';render()}
+function openCategory(id){animateView=true;active=id;selected=equipped[id];search='';sort='default';favoritesOnly=false;equippedOnly=false;view='inventory';render()}
 function equipSelected(){equipped[active]=selected;save();render();const root=document.getElementById('locker-root');root?.querySelector('.sf-cosmetic.is-selected')?.classList.add('sf-equip-flash')}
 function render(){
  const shouldAnimate=animateView;animateView=false;
  const root=document.getElementById('locker-root');if(!root)return;
  const c=cat(),isEmotes=section==='emotes',overview=view==='overview'&&!isEmotes;
- const filtered=c.items.map((item,index)=>({item,index})).filter(x=>x.item.toLowerCase().includes(search.toLowerCase())&&(!favoritesOnly||favorites[active+':'+x.item]));
+ const filtered=c.items.map((item,index)=>({item,index})).filter(x=>x.item.toLowerCase().includes(search.toLowerCase())&&(!favoritesOnly||isFavorite(active,x.item))&&(!equippedOnly||equipped[active]===x.item));
+ if(sort==='favorites')filtered.sort((a,b)=>Number(isFavorite(active,b.item))-Number(isFavorite(active,a.item))||a.index-b.index);
  if(sort==='az')filtered.sort((a,b)=>a.item.localeCompare(b.item));
  if(sort==='za')filtered.sort((a,b)=>b.item.localeCompare(a.item));
  root.innerHTML=`<div class="sf-locker ${shouldAnimate?'sf-animate-view':'sf-instant-view'} ${overview?'sf-overview':'sf-detail-view'}">
@@ -91,9 +95,9 @@ function render(){
  <section class="sf-inventory">${isEmotes?`<div class="sf-coming"><h1>EMOTES</h1><p>This category is coming soon.</p><button data-section="you">BACK TO YOU</button></div>`:`
  <div class="sf-inventory-header"><button class="sf-back" id="sf-back" type="button">← BACK</button><h1>CHARACTER</h1></div>
  <div class="sf-category-tabs" role="tablist" aria-label="Cosmetic categories">${categories.map(k=>`<button type="button" role="tab" aria-selected="${active===k.id}" class="${active===k.id?'active':''}" data-category="${k.id}">${k.title}</button>`).join('')}</div>
- <div class="sf-inventory-tools"><label class="sf-search"><span>⌕</span><input id="sf-search" type="search" placeholder="Search ${c.title.toLowerCase()}..." value="${esc(search)}" aria-label="Search cosmetics"></label><select id="sf-sort" aria-label="Sort cosmetics"><option value="default" ${sort==='default'?'selected':''}>DEFAULT</option><option value="az" ${sort==='az'?'selected':''}>A–Z</option><option value="za" ${sort==='za'?'selected':''}>Z–A</option></select><button type="button" id="sf-filter" class="${favoritesOnly?'active':''}" title="Show favorites only">♥</button></div>
- <div class="sf-item-count">${filtered.length} COSMETICS · DOUBLE-CLICK TO EQUIP</div><div class="sf-cosmetic-grid" id="sf-grid">${filtered.map(x=>tile(x.item,x.index,c)).join('')||'<p class="sf-no-results">No cosmetics found.</p>'}</div>
- <div class="sf-inventory-footer"><span>${esc(selected)} ${equipped[active]===selected?'· EQUIPPED':''}</span><div><button type="button" id="sf-favorite">${favorites[favoriteKey()]?'♥ FAVORITED':'♡ FAVORITE'}</button><button type="button" id="sf-equip" ${equipped[active]===selected?'disabled':''}>${equipped[active]===selected?'EQUIPPED':'EQUIP'}</button></div></div>`}</section>`}
+ <div class="sf-inventory-tools"><label class="sf-search"><span>⌕</span><input id="sf-search" type="search" placeholder="Search ${c.title.toLowerCase()}..." value="${esc(search)}" aria-label="Search cosmetics"></label><select id="sf-sort" aria-label="Sort cosmetics"><option value="default" ${sort==='default'?'selected':''}>DEFAULT</option><option value="favorites" ${sort==='favorites'?'selected':''}>FAVORITES FIRST</option><option value="az" ${sort==='az'?'selected':''}>A–Z</option><option value="za" ${sort==='za'?'selected':''}>Z–A</option></select><button type="button" id="sf-filter" class="${favoritesOnly?'active':''}" title="Show favorites only" aria-pressed="${favoritesOnly}">♥ FAVORITES</button><button type="button" id="sf-equipped-filter" class="${equippedOnly?'active':''}" aria-pressed="${equippedOnly}" title="Show equipped only">✓ EQUIPPED</button></div>
+ <div class="sf-item-count">${filtered.length} OF ${c.items.length} COSMETICS · ${c.items.filter(item=>isFavorite(active,item)).length} FAVORITES · DOUBLE-CLICK TO EQUIP</div><div class="sf-cosmetic-grid" id="sf-grid">${filtered.map(x=>tile(x.item,x.index,c)).join('')||'<p class="sf-no-results">No matching cosmetics. Try another search or clear your filters.</p>'}</div>
+ <div class="sf-inventory-footer"><span>${esc(selected)} ${equipped[active]===selected?'· EQUIPPED':''}</span><div><button type="button" id="sf-favorite">${isFavorite(active,selected)?'♥ FAVORITED':'♡ FAVORITE'}</button><button type="button" id="sf-equip" ${equipped[active]===selected?'disabled':''}>${equipped[active]===selected?'EQUIPPED':'EQUIP'}</button></div></div>`}</section>`}
  </div>`;
  root.querySelectorAll('[data-emote-slot]').forEach(b=>b.addEventListener('click',()=>{emoteSlot=Number(b.dataset.emoteSlot);render()}));
  root.querySelectorAll('[data-emote-id]').forEach(b=>b.addEventListener('click',()=>assignEmote(b.dataset.emoteId)));
@@ -102,6 +106,7 @@ function render(){
  root.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>{animateView=true;section=b.dataset.section;view='overview';render()}));
  root.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>openCategory(b.dataset.category)));
  root.querySelector('#sf-back')?.addEventListener('click',()=>{animateView=true;view='overview';render()});
+ root.querySelectorAll('[data-favorite-item]').forEach(star=>{const change=e=>{e.preventDefault();e.stopPropagation();toggleFavorite(active,star.dataset.favoriteItem);render()};star.addEventListener('click',change);star.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')change(e)})});
  root.querySelectorAll('[data-item]').forEach(b=>{
   b.addEventListener('click',e=>{
    selected=b.dataset.item;
@@ -115,7 +120,8 @@ function render(){
  input?.addEventListener('input',()=>{const pos=input.selectionStart;search=input.value;render();const next=root.querySelector('#sf-search');next?.focus();next?.setSelectionRange(pos,pos)});
  root.querySelector('#sf-sort')?.addEventListener('change',e=>{sort=e.target.value;render()});
  root.querySelector('#sf-filter')?.addEventListener('click',()=>{favoritesOnly=!favoritesOnly;render()});
- root.querySelector('#sf-favorite')?.addEventListener('click',()=>{favorites[favoriteKey()]=!favorites[favoriteKey()];localStorage.setItem('skyfront-locker-favorites',JSON.stringify(favorites));render()});
+ root.querySelector('#sf-equipped-filter')?.addEventListener('click',()=>{equippedOnly=!equippedOnly;render()});
+ root.querySelector('#sf-favorite')?.addEventListener('click',()=>{toggleFavorite(active,selected);render()});
  root.querySelector('#sf-equip')?.addEventListener('click',equipSelected);
 }
 export function mountLocker(){animateView=true;section='you';view='overview';render()}
