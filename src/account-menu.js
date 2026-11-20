@@ -23,9 +23,19 @@ export function installAccountMenu(){
  const dismissDialog=()=>{if(dialogClosing||!host.childElementCount)return;dialogClosing=true;const overlay=host.querySelector('.sf-account-dialog-shade');overlay?.classList.add('sf-dialog-closing');setTimeout(()=>{host.replaceChildren();dialogClosing=false;if(opened)drawer.querySelector('[data-settings]')?.focus()},145)};
  const shade=layer.querySelector('.sf-account-shade'),drawer=layer.querySelector('.sf-account-drawer'),host=layer.querySelector('.sf-account-modal-host');
  let opened=false,previousFocus=null;
+ let gameplayMenu=false;
+ const syncMenuMode=()=>{
+  gameplayMenu=Boolean(document.querySelector('.sf-gameplay'));
+  layer.classList.toggle('sf-gameplay-menu',gameplayMenu);
+  layer.querySelector('[data-account]').hidden=gameplayMenu;
+  layer.querySelector('[data-admin-panel]').hidden=gameplayMenu;
+  layer.querySelector('[data-logout]').textContent=gameplayMenu?'↩ LEAVE MATCH':'↪ LOG OUT';
+  layer.querySelector('.sf-drawer-head span').textContent=gameplayMenu?'SKYFRONT / GAME MENU':'SKYFRONT / MENU';
+  layer.querySelector('[data-settings] small').textContent=gameplayMenu?'Audio, graphics and controls':'Preferences and controls';
+ };
  const updateSkin=()=>{const art=getEquippedSkinArt();for(const el of [trigger.querySelector('.sf-profile-skin'),layer.querySelector('.sf-drawer-skin')])el.innerHTML=art;trigger.title=getEquippedSkinName()+' · Account menu'};
  const updateProfile=async()=>{
-  layer.querySelector('[data-admin-panel]').hidden=!(await canManageLobbyNews());
+  layer.querySelector('[data-admin-panel]').hidden=gameplayMenu || !(await canManageLobbyNews());
   const {data}=await supabase.auth.getUser();const user=data?.user;
   const name=user?.user_metadata?.username||'PLAYER';
   layer.querySelector('.sf-drawer-username').textContent=name;
@@ -33,8 +43,9 @@ export function installAccountMenu(){
   const header=document.querySelector('#sf-profile-name');
   if(header)header.innerHTML=esc(name)+'<small>LEVEL 1</small>';
  };
- const open=()=>{if(opened)return;opened=true;previousFocus=document.activeElement;layer.hidden=false;document.querySelector('.shell')?.setAttribute('inert','');requestAnimationFrame(()=>layer.classList.add('open'));updateSkin();updateProfile();layer.querySelector('[data-close]').focus()};
+ const open=()=>{if(opened)return;syncMenuMode();opened=true;previousFocus=document.activeElement;layer.hidden=false;document.querySelector('.shell')?.setAttribute('inert','');requestAnimationFrame(()=>layer.classList.add('open'));updateSkin();updateProfile();layer.querySelector('[data-close]').focus()};
  const close=()=>{if(!opened)return;opened=false;layer.classList.remove('open');host.replaceChildren();document.querySelector('.shell')?.removeAttribute('inert');setTimeout(()=>{if(!opened)layer.hidden=true},280);previousFocus?.focus()};
+ document.addEventListener('sf:open-game-menu',open);
  trigger.onclick=open;shade.onclick=close;layer.querySelector('[data-close]').onclick=close;
  document.addEventListener('keydown',e=>{if(!opened)return;if(e.key==='Escape'){e.preventDefault();if(host.childElementCount)dismissDialog();else close();return}if(e.key==='Tab'){const area=host.childElementCount?host:drawer;const items=[...area.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(x=>x.getClientRects().length);if(!items.length)return;const first=items[0],last=items.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
  function dialog(title,body){
@@ -81,7 +92,7 @@ export function installAccountMenu(){
   area.addEventListener('change',e=>{const el=e.target.closest('[data-setting]');if(el)updateSettings({[el.dataset.setting]:el.type==='checkbox'?el.checked:el.value})});
   show('audio');
  };
- layer.querySelector('[data-logout]').onclick=async e=>{const b=e.currentTarget;b.disabled=true;const {error}=await supabase.auth.signOut();b.disabled=false;if(error){alert(error.message);return}close()};
+ layer.querySelector('[data-logout]').onclick=async e=>{if(gameplayMenu){close();document.dispatchEvent(new Event('sf:leave-gameplay'));return;}const b=e.currentTarget;b.disabled=true;const {error}=await supabase.auth.signOut();b.disabled=false;if(error){alert(error.message);return}close()};
  window.addEventListener('skyfront:cosmetic-changed',updateSkin);
  window.addEventListener('storage',e=>{if(e.key==='skyfront-locker-v1')updateSkin()});
  supabase.auth.onAuthStateChange(()=>setTimeout(updateProfile,0));
