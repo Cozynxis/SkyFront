@@ -1,5 +1,5 @@
 import {installLobbyNews,refreshLobbyNews} from './lobby-news.js';
-import { mountLocker } from './locker.js';
+import { mountLocker, unmountLocker } from './locker.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
 import { installAudio, readSettings } from './audio.js';
@@ -117,6 +117,7 @@ function setPage(id){
  document.body.classList.toggle('sf-on-play',id==='play');
  if(id!=='play')document.dispatchEvent(new Event('sf:leave-play'));
  if(id===current && stage.childElementCount)return;
+ unmountLocker();
  pageEvents.abort();pageEvents=new AbortController();
  if(cleanupShop){cleanupShop();cleanupShop=null;}
  if(cleanupFrontPass){cleanupFrontPass();cleanupFrontPass=null;}
