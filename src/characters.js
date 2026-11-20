@@ -78,9 +78,16 @@ export function mountCharacterPreview(host,name='Jaxon'){
 }
 
 const thumbnailCache=new Map();
+const thumbnailPending=new Map();
 export function getSkinThumbnail(name){return thumbnailCache.get(name)||null}
 export async function generateSkinThumbnail(name){
  if(thumbnailCache.has(name))return thumbnailCache.get(name);
+ if(thumbnailPending.has(name))return thumbnailPending.get(name);
+ const task=renderThumbnail(name).finally(()=>thumbnailPending.delete(name));
+ thumbnailPending.set(name,task);
+ return task;
+}
+async function renderThumbnail(name){
  const avatar=await createSkyfrontCharacter(name);
  const scene=new THREE.Scene();
  scene.add(avatar);scene.add(new THREE.HemisphereLight(0xffffff,0x345078,2.7));
