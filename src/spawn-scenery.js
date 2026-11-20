@@ -45,7 +45,7 @@ export function buildSpawnScenery(scene){
   {file:'stylized_bush.glb',count:35,min:21,max:63,scale:2.1},
   {file:'small_grass_low_poly.glb',count:90,min:17,max:61,scale:1.35},
   {file:'low_poly_rock_set.glb',count:19,min:34,max:67,scale:1.6},
-  {file:'small_modern_garage.glb',spots:[[-1,-27,0],[24,-20,-.25],[-24,-16,.22]],scale:12}
+  {file:'small_modern_garage.glb',spots:[[0,-48,0],[-37,-12,1.57],[37,-12,-1.57]],scale:12}
  ];
  const hash=(n)=>{let x=(n*1664525+1013904223)>>>0;return x/4294967296};
  const makePositions=(def)=>{
@@ -56,7 +56,9 @@ export function buildSpawnScenery(scene){
    const radius=def.min+(def.max-def.min)*Math.sqrt(hash(i*19+def.count));
    const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
    // Leave the central road, landing zone and waiting area clear.
-   if(Math.abs(x)<10&&z>-46&&z<30)continue;
+   if(Math.abs(x)<15&&z>-53&&z<35)continue;
+   if(z<0&&Math.abs(x)>16&&Math.abs(x)<48&&z>-43)continue;
+   if(Math.abs(x)<13&&z<-39)continue;
    positions.push({x,z,rot:hash(i*7+def.count)*Math.PI*2});
   }
   return positions;
@@ -82,19 +84,19 @@ export function buildSpawnScenery(scene){
     clone.position.set(p.x-center.x,.09-bb.min.y,p.z-center.z);
     scene.add(clone);imported.push(clone);
    }
-  },undefined,()=>{console.warn('Spawn Island model missing:',def.file)});
+  },undefined,error=>{console.warn('Spawn Island model could not be loaded:',def.file,error)});
  }
  // Textured shipping containers, including ribs and corner locks.
  const containerColors=['#cf7850','#3b89b2','#d3b64f','#5a9b88'];
  for(let i=0;i<14;i++){
-  const x=-33+(i%7)*10,z=-38+Math.floor(i/7)*8,m=mat(containerColors[i%4]);
+  const x=(i%2===0?-1:1)*(22+(i%4)*7),z=-36+Math.floor(i/4)*9,m=mat(containerColors[i%4]);
   box(x,1.4,z,6,2.8,2.8,m);
   for(let j=0;j<10;j++)box(x-2.65+j*.58,1.4,z+1.43,.09,2.5,.06,metal);
   for(const side of [-1,1])box(x+side*2.9,1.4,z+1.46,.14,2.7,.09,mat('#d2dce2'));
  }
  // Wooden picnic benches and crates around the social waiting area.
  for(let i=0;i<7;i++){
-  const x=-24+i*8,z=25+(i%2)*4;
+  const x=-27+i*9,z=27+(i%2)*5;
   box(x,.75,z,3,.18,1.2,wood);box(x-1,.36,z,.18,.7,1,metal);box(x+1,.36,z,.18,.7,1,metal);
  }
  for(let i=0;i<10;i++){
