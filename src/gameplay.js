@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import './gameplay.css';
 import {supabase} from './community.js';
 import {buildSpawnScenery} from './spawn-scenery.js';
+import {mountGameHud} from './game-hud.js';
 
 export function mountGameplay(root,{onExit=()=>{}}={}){
  let alive=true,frame=0,locked=false,phase='waiting',countdown=25,phaseClock=0,partyChannel=null,partyId=null,playerId=null,partyRoster=[],lastRosterUpdate=0;
@@ -25,6 +26,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
  const disposeScenery=buildSpawnScenery(scene);
 
  const position=new THREE.Vector3(0,1.75,11);
+ const gameHud=mountGameHud(root,{position});
  const remoteAvatars=new Map();
  const avatarMaterial=new THREE.MeshStandardMaterial({color:'#f4ca89',roughness:.82});
  const shirtMaterial=new THREE.MeshStandardMaterial({color:'#2688c9',roughness:.8});
@@ -47,6 +49,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
    if(!playerId){partyRoster=[];syncAvatars();return}
    const {data,error}=await supabase.rpc('sf_party_view');if(error)throw error;
    partyRoster=(data||[]).map(p=>({...p,user_id:p.member_id||p.user_id}));
+   gameHud.setState({players:Math.max(1,partyRoster.length)});
    const nextId=partyRoster[0]?.party_id||null;
    if(nextId!==partyId){
     if(partyChannel){await supabase.removeChannel(partyChannel);partyChannel=null}
@@ -55,7 +58,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
      partyChannel=supabase.channel('sf-spawn-'+partyId,{config:{presence:{key:playerId}}});
      partyChannel.on('presence',{event:'sync'},()=>{
       const members=Object.values(partyChannel.presenceState()).flat();
-      if(alive)onlineLabel.textContent=members.length+' CONNECTED IN PARTY';
+      if(alive){onlineLabel.textContent=members.length+' CONNECTED IN PARTY';gameHud.setState({players:Math.max(1,members.length)})}
      }).on('broadcast',{event:'start'},({payload})=>{
       if(!alive||phase!=='waiting')return;
       countdown=Math.max(1,Math.min(60,Number(payload?.countdown)||25));
@@ -96,7 +99,7 @@ let yaw=0,pitch=0;
   const dt=Math.min((now-last)/1000,.05);last=now;
   lastRosterUpdate+=dt;if(lastRosterUpdate>4){lastRosterUpdate=0;void loadParty()}
   phaseClock+=dt;
-  if(phase==='waiting'){countdown=Math.max(0,countdown-dt);countdownLabel.textContent='BATTLE BUS IN '+Math.ceil(countdown)+'s';if(countdown<=0){phase='bus';phaseClock=0;bus.visible=true;busBanner.hidden=false;spawnStatus.querySelector('strong').textContent='BATTLE BUS ARRIVING';countdownLabel.textContent='SPAWN ISLAND PREVIEW'}}
+  if(phase==='waiting'){countdown=Math.max(0,countdown-dt);gameHud.setState({seconds:countdown});countdownLabel.textContent='BATTLE BUS IN '+Math.ceil(countdown)+'s';if(countdown<=0){phase='bus';phaseClock=0;bus.visible=true;busBanner.hidden=false;spawnStatus.querySelector('strong').textContent='BATTLE BUS ARRIVING';countdownLabel.textContent='SPAWN ISLAND PREVIEW'}}
   if(phase==='bus'){bus.position.x=-60+Math.min(120,phaseClock*12);bus.position.y=22+Math.sin(phaseClock*.9)*1.2;bus.rotation.y=.1;if(phaseClock>11){phase='complete';bus.visible=false;spawnStatus.querySelector('strong').textContent='SPAWN ISLAND';countdownLabel.textContent='BATTLE ROYALE MAP COMING SOON'}}
   const width=root.clientWidth,height=root.clientHeight;
   if(width&&height){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}
@@ -107,6 +110,7 @@ let yaw=0,pitch=0;
   if(!collides(position.x+dx,position.z))position.x+=dx;
   if(!collides(position.x,position.z+dz))position.z+=dz;
   const radius=Math.hypot(position.x,position.z);if(radius>68){position.x*=68/radius;position.z*=68/radius}
+  gameHud.updatePosition();
   camera.position.copy(position);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
   renderer.render(scene,camera);
  }
@@ -118,6 +122,7 @@ let yaw=0,pitch=0;
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
   if(partyChannel)void supabase.removeChannel(partyChannel);
   disposeScenery();
+  gameHud.dispose();
   renderer.dispose();renderer.domElement.remove();hud.remove();
  }
  return dispose;
