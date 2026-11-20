@@ -19,7 +19,8 @@ function shell(){
  overlay.querySelector('[data-close]').onclick=closeSupport;
  overlay.querySelector('[data-backdrop]').onclick=closeSupport;
 }
-export function closeSupport(){requestVersion++;if(!overlay)return;overlay.classList.remove('visible');overlay.hidden=true;clearInterval(refreshTimer);refreshTimer=null;if(channel){void supabase.removeChannel(channel);channel=null}}
+export function closeSupport(){requestVersion++;if(!overlay)return;
+ if(adminMode)window.dispatchEvent(new CustomEvent('skyfront:support-admin-closed'));overlay.classList.remove('visible');overlay.hidden=true;clearInterval(refreshTimer);refreshTimer=null;if(channel){void supabase.removeChannel(channel);channel=null}}
 async function load({force=false}={}){
  const version=++requestVersion;
  // Never replace a form while somebody is typing or choosing an option.
