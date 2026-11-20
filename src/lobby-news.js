@@ -8,6 +8,7 @@ const stamp=v=>new Date(v).toLocaleDateString('en-GB',{day:'numeric',month:'shor
 let entries=[],seconds=8,position=0,rotation=null,refresh=null,modal=null;
 let adminOpen=false,editing=null,adminChecked=false,adminAllowed=false;
 let adminHost=null;
+let adminPage='news',adminDataSignature='';
 const fetchNews=async()=>{
  const [a,c]=await Promise.all([
   supabase.from('sf_lobby_announcements').select('id,title,body,image_url,category,published,pinned,lobby_enabled,lobby_order,created_at').order('lobby_order',{ascending:true}).order('created_at',{ascending:false}),
@@ -16,7 +17,10 @@ const fetchNews=async()=>{
  if(a.error){console.warn('Lobby news:',a.error.message);return}
  entries=a.data||[];seconds=c.data?.rotation_seconds||8;
  renderLobby();schedule();
- if(adminOpen)renderAdmin();
+ if(adminOpen&&adminPage==='news'){
+  const signature=JSON.stringify([entries,seconds]);
+  if(signature!==adminDataSignature){adminDataSignature=signature;renderAdmin()}
+ }
 };
 const active=()=>entries.filter(e=>e.published&&e.lobby_enabled);
 function renderLobby(){
@@ -53,9 +57,11 @@ async function verifyAdmin(){
 export async function canManageLobbyNews(){return verifyAdmin()}
 function renderAdmin(){
  if(!adminHost||!adminOpen)return;
- adminHost.innerHTML='<div class="sf-news-admin-shade"><section class="sf-news-admin" role="dialog" aria-modal="true" aria-label="SKYFRONT Admin Panel"><header><div><small>SKYFRONT / ADMINISTRATION</small><h2>ADMIN PANEL</h2><p>Manage news and player support</p></div><button type="button" data-admin-close aria-label="Close">×</button></header><div class="sf-news-admin-main"><div class="sf-news-admin-toolbar"><button type="button" data-open-support style="background:#ffdf37;color:#16244b;border:0;border-radius:8px;padding:12px 16px;font-weight:900;cursor:pointer">✉ SUPPORT TICKETS</button><label>NEWS ROTATION <select data-news-seconds>'+[3,5,8,10,15,20,30,45,60].map(v=>'<option value="'+v+'" '+(v===seconds?'selected':'')+'>'+v+' SECONDS</option>').join('')+'</select></label><button type="button" data-news-create>+ NEW ARTICLE</button></div><div class="sf-news-admin-list">'+(entries.length?entries.map((e,i)=>'<article class="sf-news-admin-row"><div class="sf-news-admin-thumb">'+(safeUrl(e.image_url)?'<img src="'+esc(safeUrl(e.image_url))+'" alt="">':'S')+'</div><div class="sf-news-admin-info"><strong>'+esc(e.title)+'</strong><small>'+esc(e.category||'NEWS')+' · '+(e.published?'PUBLISHED':'DRAFT')+' · '+(e.lobby_enabled?'IN LOBBY':'HIDDEN FROM LOBBY')+'</small></div><div class="sf-news-admin-actions"><button type="button" data-move="-1" data-id="'+esc(e.id)+'" '+(i===0?'disabled':'')+' title="Move up">↑</button><button type="button" data-move="1" data-id="'+esc(e.id)+'" '+(i===entries.length-1?'disabled':'')+' title="Move down">↓</button><button type="button" data-edit="'+esc(e.id)+'">EDIT</button><button type="button" data-delete="'+esc(e.id)+'" title="Delete">×</button></div></article>').join(''):'<p class="sf-news-admin-empty">No news yet. Create your first announcement.</p>')+'</div></div></section></div>';
+ adminDataSignature=JSON.stringify([entries,seconds]);
+ adminHost.innerHTML='<div class="sf-news-admin-shade"><section class="sf-news-admin" role="dialog" aria-modal="true" aria-label="SKYFRONT Admin Panel"><header><div><small>SKYFRONT / ADMINISTRATION</small><h2>ADMIN PANEL</h2><p>Manage news and player support</p></div><button type="button" data-admin-close aria-label="Close">×</button></header><div class="sf-news-admin-main"><nav class="sf-news-admin-pages" aria-label="Admin sections"><button type="button" data-admin-page="news" class="is-active">◈ NEWS & ANNOUNCEMENTS</button><button type="button" data-admin-page="support">✉ SUPPORT TICKETS</button></nav><div class="sf-news-admin-toolbar"><button type="button" data-open-support style="background:#ffdf37;color:#16244b;border:0;border-radius:8px;padding:12px 16px;font-weight:900;cursor:pointer">✉ SUPPORT TICKETS</button><label>NEWS ROTATION <select data-news-seconds>'+[3,5,8,10,15,20,30,45,60].map(v=>'<option value="'+v+'" '+(v===seconds?'selected':'')+'>'+v+' SECONDS</option>').join('')+'</select></label><button type="button" data-news-create>+ NEW ARTICLE</button></div><div class="sf-news-admin-list">'+(entries.length?entries.map((e,i)=>'<article class="sf-news-admin-row"><div class="sf-news-admin-thumb">'+(safeUrl(e.image_url)?'<img src="'+esc(safeUrl(e.image_url))+'" alt="">':'S')+'</div><div class="sf-news-admin-info"><strong>'+esc(e.title)+'</strong><small>'+esc(e.category||'NEWS')+' · '+(e.published?'PUBLISHED':'DRAFT')+' · '+(e.lobby_enabled?'IN LOBBY':'HIDDEN FROM LOBBY')+'</small></div><div class="sf-news-admin-actions"><button type="button" data-move="-1" data-id="'+esc(e.id)+'" '+(i===0?'disabled':'')+' title="Move up">↑</button><button type="button" data-move="1" data-id="'+esc(e.id)+'" '+(i===entries.length-1?'disabled':'')+' title="Move down">↓</button><button type="button" data-edit="'+esc(e.id)+'">EDIT</button><button type="button" data-delete="'+esc(e.id)+'" title="Delete">×</button></div></article>').join(''):'<p class="sf-news-admin-empty">No news yet. Create your first announcement.</p>')+'</div></div></section></div>';
  adminHost.querySelector('[data-admin-close]').onclick=closeAdmin;
- adminHost.querySelector('[data-open-support]').onclick=()=>{void openSupportAdmin()};
+ adminHost.querySelectorAll('[data-admin-page]').forEach(b=>b.onclick=()=>{if(b.dataset.adminPage==='support'){adminPage='support';adminHost.style.display='none';void openSupportAdmin();return}adminPage='news';renderAdmin()});
+ adminHost.querySelector('[data-open-support]').onclick=()=>{adminPage='support';adminHost.style.display='none';void openSupportAdmin()};
  adminHost.querySelector('[data-news-create]').onclick=()=>editArticle(null);
  adminHost.querySelector('[data-news-seconds]').onchange=async e=>{
   const value=Number(e.target.value);
@@ -99,9 +105,9 @@ function editArticle(item){
 export async function openLobbyNewsAdmin(){
  if(!await verifyAdmin())return false;
  if(!adminHost){adminHost=document.createElement('div');adminHost.className='sf-news-admin-host';document.body.append(adminHost)}
- adminOpen=true;renderAdmin();return true;
+ adminOpen=true;adminPage='news';adminHost.style.display='';renderAdmin();return true;
 }
-function closeAdmin(){adminOpen=false;adminHost?.replaceChildren()}
+function closeAdmin(){adminOpen=false;adminPage='news';if(adminHost){adminHost.style.display='';adminHost.replaceChildren()}}
 export function installLobbyNews(){
  fetchNews();refresh=setInterval(fetchNews,20000);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)clearInterval(rotation);else{fetchNews();schedule()}});
