@@ -1,5 +1,6 @@
 import {canManageLobbyNews,openLobbyNewsAdmin} from './lobby-news.js';
 import {readSettings,updateSettings} from './audio.js';
+import {openSupportPortal} from './support.js';
 import './settings.css';
 import { supabase } from './community.js';
 import { getEquippedSkinArt, getEquippedSkinName } from './locker.js';
@@ -17,7 +18,7 @@ export function installAccountMenu(){
  top.appendChild(trigger);
  const layer=document.createElement('div');
  layer.className='sf-account-layer';layer.hidden=true;
- layer.innerHTML='<div class="sf-account-shade"></div><aside class="sf-account-drawer" role="dialog" aria-modal="true" aria-label="Account menu"><div class="sf-drawer-head"><span>SKYFRONT / MENU</span><button type="button" data-close aria-label="Close menu">×</button></div><div class="sf-drawer-profile"><div class="sf-drawer-skin"></div><div><strong class="sf-drawer-username">PLAYER</strong><small class="sf-drawer-email"></small></div></div><div class="sf-drawer-links"><button type="button" data-account>◉ <span>ACCOUNT<small>Manage your profile and security</small></span><b>›</b></button><button type="button" data-settings>⚙ <span>SETTINGS<small>Preferences and controls</small></span><b>›</b></button></div><button class="sf-drawer-admin" type="button" data-admin-panel hidden>✦ <span>ADMIN PANEL</span><b>›</b></button><button class="sf-drawer-logout" type="button" data-logout>↪ LOG OUT</button></aside><div class="sf-account-modal-host"></div>';
+ layer.innerHTML='<div class="sf-account-shade"></div><aside class="sf-account-drawer" role="dialog" aria-modal="true" aria-label="Account menu"><div class="sf-drawer-head"><span>SKYFRONT / MENU</span><button type="button" data-close aria-label="Close menu">×</button></div><div class="sf-drawer-profile"><div class="sf-drawer-skin"></div><div><strong class="sf-drawer-username">PLAYER</strong><small class="sf-drawer-email"></small></div></div><div class="sf-drawer-links"><button type="button" data-account>◉ <span>ACCOUNT<small>Manage your profile and security</small></span><b>›</b></button><button type="button" data-settings>⚙ <span>SETTINGS<small>Preferences and controls</small></span><b>›</b></button><button type="button" data-support>✉ <span>SUPPORT<small>Help, bugs and your tickets</small></span><b>›</b></button></div><button class="sf-drawer-admin" type="button" data-admin-panel hidden>✦ <span>ADMIN PANEL</span><b>›</b></button><button class="sf-drawer-logout" type="button" data-logout>↪ LOG OUT</button></aside><div class="sf-account-modal-host"></div>';
  document.body.appendChild(layer);
  const leaveButton=layer.querySelector('[data-logout]');
  const leaveWrap=document.createElement('div');leaveWrap.className='sf-leave-wrap';
@@ -38,6 +39,7 @@ export function installAccountMenu(){
   gameplayMenu=Boolean(document.querySelector('.sf-gameplay'));
   layer.classList.toggle('sf-gameplay-menu',gameplayMenu);
   layer.querySelector('[data-account]').hidden=gameplayMenu;
+  layer.querySelector('[data-support]').hidden=gameplayMenu;
   layer.querySelector('[data-admin-panel]').hidden=gameplayMenu;
   layer.querySelector('[data-logout]').textContent=gameplayMenu?'↩ LEAVE MATCH':'↪ LOG OUT';
   layer.querySelector('.sf-drawer-head span').textContent=gameplayMenu?'SKYFRONT / GAME MENU':'SKYFRONT / MENU';
@@ -65,6 +67,7 @@ export function installAccountMenu(){
   host.querySelector('.sf-account-dialog-shade').onclick=e=>{if(e.target===e.currentTarget)dismissDialog()};
   host.querySelector('input,button')?.focus();
  }
+ layer.querySelector('[data-support]').onclick=()=>{close();void openSupportPortal()};
  layer.querySelector('[data-admin-panel]').onclick=async()=>{if(await openLobbyNewsAdmin())close()};
  layer.querySelector('[data-account]').onclick=async()=>{
   const {data}=await supabase.auth.getUser(),user=data?.user;
