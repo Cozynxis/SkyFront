@@ -1,3 +1,4 @@
+import {installSupportNotifications} from './support.js';
 import {installLobbyNews,refreshLobbyNews} from './lobby-news.js';
 import {showLoadingScreen} from './loading-screen.js';
 import {mountGameplay} from './gameplay.js';
@@ -97,6 +98,7 @@ window.addEventListener('skyfront:settings-changed',e=>{
  if(!e.detail.showFps){fpsFrames=0;fpsWindowStart=0;}
 });
 installLobbyNews();
+installSupportNotifications();
 installAuthGate();
 installAccountMenu();
 installFriends();
