@@ -22,7 +22,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
   <div class="sf-hud-vital sf-hud-health"><span class="sf-hud-vital-symbol">✚</span><div class="sf-hud-vital-track"><i data-hud-health-bar></i></div><strong data-hud-health>100</strong></div>
  </div>
  <div class="sf-hud-inventory" aria-label="Inventory">
-  <div class="sf-hud-resources"><span>INVENTORY</span><small>EARLY ACCESS</small></div>
+  
   <div class="sf-hud-slots">
    <button type="button" data-slot="0" class="sf-hud-slot is-active" aria-label="Slot 1: Pickaxe"><span class="sf-hud-slot-num">1</span><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M12 38L35 12M13 14Q24 6 39 14M29 11l10 10"/></svg><small>PICKAXE</small></button>
    ${[1,2,3,4,5].map(i=>`<button type="button" data-slot="${i}" class="sf-hud-slot" aria-label="Empty inventory slot ${i+1}"><span class="sf-hud-slot-num">${i+1}</span><span class="sf-hud-slot-empty">+</span></button>`).join('')}
