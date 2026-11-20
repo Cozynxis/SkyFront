@@ -164,3 +164,19 @@
 
 .sf-model-thumbnail{width:100%;height:100%;max-height:100%;object-fit:contain;display:block;filter:drop-shadow(0 8px 12px #05152a66)}
 .sf-model-loading{position:absolute;inset:auto 12px 18px;text-align:center;font-weight:900;font-size:12px;letter-spacing:.12em;color:#eaf4ff;z-index:4;pointer-events:none}
+
+/* Character loadout: preserved empty slots and separate full-height 3D preview */
+.sf-locker.sf-overview{grid-template-columns:64px minmax(320px,44%) 1px minmax(300px,1fr);gap:clamp(10px,1.5vw,22px)}
+.sf-locker.sf-overview .sf-loadout{padding-right:12px}
+.sf-overview-divider{width:1px;align-self:stretch;margin:25px 0;background:linear-gradient(180deg,transparent,#b8e5ff8c 18%,#b8e5ff8c 82%,transparent)}
+.sf-overview-character{min-width:0;min-height:0;position:relative;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.sf-overview-character-heading{position:absolute;z-index:3;top:4%;left:5%;pointer-events:none}
+.sf-overview-character-heading small{display:block;color:#c6e7ff;letter-spacing:.18em;font-weight:900}
+.sf-overview-character-heading h2{font:900 clamp(30px,4vw,60px) 'Barlow Condensed',Impact,sans-serif;margin:4px 0}
+.sf-overview-character-heading span{font-size:11px;letter-spacing:.1em;color:#bcd4ec}
+.sf-overview-character .sf-character-preview{width:100%;height:100%;min-height:0;flex:1}
+.sf-empty-slot-icon{display:grid;place-items:center;width:100%;height:100%;min-height:45px;color:#c0e5ff9e;font-size:34px;font-weight:300}
+.sf-loadout-card:has(.sf-empty-slot-icon){background:linear-gradient(145deg,#23477670,#102d5c91);border-style:dashed;border-color:#9ac5e56b}
+.sf-loadout-card:has(.sf-empty-slot-icon) small{color:#a6c1da}
+@media(max-width:900px){.sf-locker.sf-overview{grid-template-columns:56px minmax(220px,47%) 1px minmax(180px,1fr);gap:8px}.sf-loadout-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.sf-locker.sf-overview{grid-template-columns:50px minmax(0,1fr);overflow-y:auto}.sf-locker.sf-overview .sf-loadout{grid-column:2}.sf-locker.sf-overview .sf-overview-divider{display:none}.sf-locker.sf-overview .sf-overview-character{grid-column:2;height:380px;min-height:380px}}
