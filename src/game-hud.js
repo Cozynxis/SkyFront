@@ -32,6 +32,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  const canvas=el.querySelector('canvas'),ctx=canvas.getContext('2d');
  const slots=[...el.querySelectorAll('[data-slot]')];
  let active=0,health=100,shield=0,kills=0,players=1,seconds=25;
+ let inventoryItems=[{name:'PICKAXE',kind:'pickaxe'},null,null,null,null,null];
  const update=()=>{
   el.querySelector('[data-hud-health]').textContent=Math.round(health);
   el.querySelector('[data-hud-shield]').textContent=Math.round(shield);
@@ -40,7 +41,13 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
   el.querySelector('[data-hud-kills]').textContent=kills;
   el.querySelector('[data-hud-players]').textContent=players;
   el.querySelector('[data-hud-time]').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
-  slots.forEach((slot,i)=>{slot.classList.toggle('is-active',i===active);slot.setAttribute('aria-pressed',String(i===active))});
+  slots.forEach((slot,i)=>{
+   slot.classList.toggle('is-active',i===active);
+   slot.setAttribute('aria-pressed',String(i===active));
+   const item=inventoryItems[i];
+   slot.setAttribute('aria-label',item?'Slot '+(i+1)+': '+item.name:'Empty slot '+(i+1));
+   slot.innerHTML='<span class="sf-hud-slot-num">'+(i+1)+'</span>'+(item?'<span class="sf-hud-slot-item">'+(item.kind==='pickaxe'?'⛏':'⌁')+'</span><small>'+item.name+'</small>':'<span class="sf-hud-slot-empty">+</span>');
+  });
  };
  const choose=i=>{active=Math.max(0,Math.min(5,i));update()};
  slots.forEach((slot,i)=>slot.addEventListener('click',()=>choose(i)));
@@ -68,6 +75,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  update();drawMap();
  let lastX=NaN,lastZ=NaN;
  return {
+  setInventory(items,index){inventoryItems=items;active=index;update()},
   setState(next={}){if(next.health!==undefined)health=Math.max(0,Math.min(100,next.health));if(next.shield!==undefined)shield=Math.max(0,Math.min(100,next.shield));if(next.kills!==undefined)kills=Math.max(0,next.kills);if(next.players!==undefined)players=Math.max(1,next.players);if(next.seconds!==undefined)seconds=Math.max(0,next.seconds);update()},
   updatePosition(){if(position&&(position.x!==lastX||position.z!==lastZ)){lastX=position.x;lastZ=position.z;drawMap()}},
   dispose(){window.removeEventListener('keydown',keydown);el.remove()}
