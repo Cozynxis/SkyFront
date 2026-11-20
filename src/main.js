@@ -3,6 +3,8 @@ import {showLoadingScreen} from './loading-screen.js';
 import {mountGameplay} from './gameplay.js';
 import { mountLocker, unmountLocker, getEquippedSkinName } from './locker.js';
 import { mountCharacterPreview } from './characters.js';
+import { showLoadingScreen } from './loading-screen.js';
+import { mountGameplay } from './gameplay.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
 import { installAudio, readSettings } from './audio.js';
@@ -215,6 +217,40 @@ function initModeSelector(){
    overlay.querySelector('#mode-close').focus();
  };
  trigger.addEventListener('click',open);
+ stage.querySelector('#start-play')?.addEventListener('click',()=>{
+  const members=window.__sfPartyMembers||[];
+  let disposeGameplay=null;
+  let gameRoot=null;
+  const cancelLoading=showLoadingScreen({
+   team:selectedTeam,fill:fillMode,partySize:Math.max(1,members.length),
+   onReady:()=>{
+    if(!stage.querySelector('#start-play'))return;
+    gameRoot=document.createElement('div');
+    gameRoot.className='sf-gameplay-screen';
+    document.body.append(gameRoot);
+    document.body.classList.add('sf-gameplay-active');
+    try{
+     disposeGameplay=mountGameplay(gameRoot,{onExit:()=>{
+      disposeGameplay=null;
+      gameRoot?.remove();
+      document.body.classList.remove('sf-gameplay-active');
+     }});
+    }catch(error){
+     console.error('Could not start gameplay',error);
+     gameRoot?.remove();
+     document.body.classList.remove('sf-gameplay-active');
+    }
+   },
+   onCancel:()=>{}
+  });
+  pageEvents.signal.addEventListener('abort',()=>{
+   cancelLoading();
+   disposeGameplay?.();
+   gameRoot?.remove();
+   document.body.classList.remove('sf-gameplay-active');
+  },{once:true});
+ });
+
  overlay.querySelector('#mode-close').addEventListener('click',close);
  overlay.querySelector('#mode-backdrop').addEventListener('click',close);
  overlay.querySelector('#battle-royale-tile').addEventListener('click',()=>{
