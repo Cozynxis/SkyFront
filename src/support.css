@@ -17,3 +17,13 @@
 .sf-support-admin-summary>div{background:linear-gradient(135deg,#2a4d85aa,#152b55)}
 .sf-support-thread{max-height:380px}
 @media(max-width:600px){.sf-support-body{padding:18px}.sf-support-dialog>header{padding:19px}.sf-support-filters input{min-width:100%}}
+
+/* Embedded admin support: no second backdrop, no stacked modal or blocked tabs */
+.sf-support-overlay.sf-support-embedded{position:relative;inset:auto;z-index:auto;display:block;padding:0;background:none;min-height:260px}
+.sf-support-embedded .sf-support-backdrop{display:none}
+.sf-support-embedded .sf-support-dialog{position:relative;width:100%;max-height:none;overflow:visible;transform:none!important;opacity:1!important;border:1px solid #789cda50;border-radius:14px;box-shadow:none;background:#101f40}
+.sf-support-embedded .sf-support-dialog>header{padding:17px 22px;background:#1b3568}
+.sf-support-embedded .sf-support-dialog>header h2{font-size:28px}
+.sf-support-embedded .sf-support-body{overflow:visible;min-height:300px;padding:22px}
+.sf-support-embedded .sf-support-dialog>header [data-close]{display:none}
+.sf-support-embedded .sf-support-thread{max-height:320px}
