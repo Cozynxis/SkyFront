@@ -145,3 +145,12 @@
 @media(max-width:850px){.sf-emote-layout{grid-template-columns:minmax(0,45%) minmax(0,55%)}.sf-wheel{width:min(100%,clamp(200px,38vh,310px))}.sf-emote-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:620px){.sf-emote-layout{display:flex;flex-direction:column;overflow-y:auto}.sf-wheel{width:min(100%,250px)}.sf-emote-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}.sf-emote-library{overflow:visible}.sf-emote-card{min-height:0}}
 @media(max-height:740px) and (min-width:621px){.sf-wheel{width:min(100%,clamp(190px,37vh,290px))}.sf-wheel-slot{width:clamp(42px,6vh,55px);height:clamp(42px,6vh,55px)}.sf-emote-header h1{font-size:36px}.sf-emote-card-symbol{font-size:22px}}
+
+/* Locker favorites and compact filters */
+.sf-cosmetic{position:relative}
+.sf-card-favorite{position:absolute;top:7px;right:7px;z-index:4;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:#071c42c9;border:1px solid #ffffff65;color:#eaf4ff;font-size:19px;line-height:1;transition:transform .14s,background .14s,color .14s;cursor:pointer}
+.sf-card-favorite:hover,.sf-card-favorite:focus-visible{transform:scale(1.12);background:#284e85;outline:2px solid #a9d9ff}
+.sf-card-favorite.is-favorite{color:#ffda6c;background:#3d3065e8;border-color:#ffe28a}
+#sf-filter,#sf-equipped-filter{white-space:nowrap;min-width:42px;padding:9px 11px;border:1px solid #a6d6ff60;border-radius:9px;background:#183f75;color:#e8f6ff;font-size:11px;font-weight:900;cursor:pointer}
+#sf-filter.active,#sf-equipped-filter.active{background:#ffdc65;color:#19335e;border-color:#ffebaa}
+.sf-inventory-tools{flex-wrap:wrap}
