@@ -31,8 +31,14 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
   </div>
  </div>`;
  parent.append(el);
+ const fullMap=document.createElement('div');fullMap.className='sf-full-map';fullMap.hidden=true;
+ fullMap.innerHTML='<div class="sf-full-map-head"><strong>BATTLE ROYALE MAP</strong><span>M TO CLOSE</span></div><canvas width="760" height="760"></canvas><div class="sf-full-map-footer">SKYFRONT ISLAND · EXPLORE THE NAMED LOCATIONS</div>';
+ parent.append(fullMap);
+ const fullCanvas=fullMap.querySelector('canvas'),fullCtx=fullCanvas.getContext('2d');
+ let mapOpen=false;
  const canvas=el.querySelector('canvas'),ctx=canvas.getContext('2d');
  const slots=[...el.querySelectorAll('[data-slot]')];
+ let heading=0;
  let active=0,health=100,shield=0,kills=0,players=1,seconds=25,mode='spawn';
  const staminaWrap=el.querySelector('[data-hud-stamina-wrap]');
  const staminaBar=el.querySelector('[data-hud-stamina-bar]');
@@ -73,7 +79,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
    ctx.fillStyle='#122c49';ctx.beginPath();ctx.arc(x,z,7,0,Math.PI*2);ctx.fill();
    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,z,4.5,0,Math.PI*2);ctx.fill();
    ctx.fillStyle='#45d6ff';ctx.beginPath();ctx.arc(x,z,2.8,0,Math.PI*2);ctx.fill();
-   return;
+   drawFullMap();return;
   }
   const size=240,c=120,scale=1.57;
   ctx.clearRect(0,0,size,size);
@@ -112,12 +118,24 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
   ctx.beginPath();ctx.arc(px,pz,6,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
   ctx.beginPath();ctx.arc(px,pz,3.5,0,Math.PI*2);ctx.fillStyle='#35d5ff';ctx.fill();
  }
+ function drawFullMap(){
+  if(!fullCtx||!mapOpen)return;
+  const c=380,scale=350/790;
+  fullCtx.fillStyle='#1b729d';fullCtx.fillRect(0,0,760,760);
+  fullCtx.fillStyle='#d9c991';fullCtx.beginPath();fullCtx.arc(c,c,357,0,Math.PI*2);fullCtx.fill();
+  fullCtx.fillStyle='#76b66b';fullCtx.beginPath();fullCtx.arc(c,c,346,0,Math.PI*2);fullCtx.fill();
+  fullCtx.fillStyle='#77878d';fullCtx.fillRect(c-7,c-295,14,590);fullCtx.fillRect(c-295,c-7,590,14);
+  for(const p of BR_PLACES){const x=c+p.x*scale,z=c+p.z*scale;fullCtx.fillStyle='#b6c6c8';fullCtx.fillRect(x-26,z-26,52,52);fullCtx.fillStyle='#324d65';for(let i=0;i<9;i++)fullCtx.fillRect(x-21+(i%3)*15,z-21+Math.floor(i/3)*15,10,10);fullCtx.font='bold 16px Arial';fullCtx.textAlign='center';fullCtx.lineWidth=4;fullCtx.strokeStyle='#152942';fullCtx.strokeText(p.name,x,z-34);fullCtx.fillStyle='#fff';fullCtx.fillText(p.name,x,z-34)}
+  const x=c+(position?.x||0)*scale,z=c+(position?.z||0)*scale;
+  fullCtx.beginPath();fullCtx.arc(x,z,12,0,Math.PI*2);fullCtx.fillStyle='#fff';fullCtx.fill();fullCtx.beginPath();fullCtx.arc(x,z,8,0,Math.PI*2);fullCtx.fillStyle='#2ccfff';fullCtx.fill();
+ }
  const keydown=e=>{if(e.repeat||e.altKey||e.ctrlKey||e.metaKey)return;const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if(/^Digit[1-6]$/.test(e.code)){choose(Number(e.code.slice(-1))-1)}};
  window.addEventListener('keydown',keydown);
  update();drawMap();
  let lastX=NaN,lastZ=NaN;
  return {
-  setMode(next){mode=next;el.classList.toggle('sf-hud-spawn',next==='spawn');el.classList.toggle('sf-hud-battle',next==='battle');el.querySelector('.sf-hud-location').textContent=next==='battle'?'BATTLE ROYALE':'SPAWN ISLAND';drawMap()},
+  toggleMap(){if(mode!=='battle')return;mapOpen=!mapOpen;fullMap.hidden=!mapOpen;drawFullMap()},
+  setMode(next){mode=next;if(next!=='battle'){mapOpen=false;fullMap.hidden=true}el.classList.toggle('sf-hud-spawn',next==='spawn');el.classList.toggle('sf-hud-battle',next==='battle');el.querySelector('.sf-hud-location').textContent=next==='battle'?'BATTLE ROYALE':'SPAWN ISLAND';drawMap()},
   setStamina(value,sprinting,exhausted){
    if(!staminaWrap||!staminaBar)return;
    const amount=Math.max(0,Math.min(100,value));
@@ -131,6 +149,6 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
   setInventory(items,index){inventoryItems=items;active=index;update()},
   setState(next={}){if(next.health!==undefined)health=Math.max(0,Math.min(100,next.health));if(next.shield!==undefined)shield=Math.max(0,Math.min(100,next.shield));if(next.kills!==undefined)kills=Math.max(0,next.kills);if(next.players!==undefined)players=Math.max(1,next.players);if(next.seconds!==undefined)seconds=Math.max(0,next.seconds);update()},
   updatePosition(){if(position&&(position.x!==lastX||position.z!==lastZ)){lastX=position.x;lastZ=position.z;drawMap()}},
-  dispose(){window.removeEventListener('keydown',keydown);el.remove()}
+  dispose(){window.removeEventListener('keydown',keydown);el.remove();fullMap.remove()}
  };
 }
