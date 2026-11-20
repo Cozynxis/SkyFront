@@ -32,12 +32,13 @@ export async function createSkyfrontCharacter(name='Jaxon'){
  model.position.y-=scaled.min.y;
  return model;
 }
-export function mountCharacterPreview(host,name='Jaxon'){
+export function mountCharacterPreview(host,name='Jaxon',options={}){
  if(!host)return()=>{};
  let disposed=false,frame=0,renderer,avatar=null,angle=0,dragging=false,lastX=0;
+ const lobby=Boolean(options.lobby),interactive=!lobby;
  const scene=new THREE.Scene();
  const camera=new THREE.PerspectiveCamera(35,1,.1,100);
- camera.position.set(0,1.7,8.3);camera.lookAt(0,1.6,0);
+ camera.position.set(0,1.7,lobby?7.3:8.3);camera.lookAt(0,1.6,0);
  const label=document.createElement('div');label.className='sf-model-loading';label.textContent='LOADING '+name.toUpperCase()+'…';host.append(label);
  try{renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});}
  catch(e){label.textContent='3D preview unavailable';return()=>label.remove()}
@@ -56,10 +57,10 @@ export function mountCharacterPreview(host,name='Jaxon'){
  const down=e=>{dragging=true;lastX=e.clientX;renderer.domElement.setPointerCapture(e.pointerId)};
  const move=e=>{if(dragging){angle+=(e.clientX-lastX)*.012;lastX=e.clientX}};
  const up=()=>{dragging=false};
- renderer.domElement.addEventListener('pointerdown',down);
- renderer.domElement.addEventListener('pointermove',move);
- renderer.domElement.addEventListener('pointerup',up);
- renderer.domElement.addEventListener('pointercancel',up);
+ if(interactive)renderer.domElement.addEventListener('pointerdown',down);
+ if(interactive)renderer.domElement.addEventListener('pointermove',move);
+ if(interactive)renderer.domElement.addEventListener('pointerup',up);
+ if(interactive)renderer.domElement.addEventListener('pointercancel',up);
  let w=0,h=0;
  function tick(now){
   if(disposed)return;
@@ -70,7 +71,7 @@ export function mountCharacterPreview(host,name='Jaxon'){
    if(w&&h){camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}
   }
   if(!w||!h)return;
-  if(avatar){if(!dragging)angle+=.002;avatar.rotation.y=angle;avatar.position.y=Math.sin(now*.0018)*.025;}
+  if(avatar){const t=now*.001; if(!dragging&&!lobby)angle+=.0012;avatar.rotation.y=angle+Math.sin(t*.65)*.055;avatar.rotation.z=Math.sin(t*.95)*.009;avatar.position.y=Math.sin(t*1.65)*.028;}
   renderer.render(scene,camera);
  }
  frame=requestAnimationFrame(tick);
