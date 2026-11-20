@@ -27,6 +27,8 @@ function effect(key){
   audio.play().catch(()=>{});
 }
 export function playReadySound(){effect('play')}
+export function stopLobbyMusic(){sounds.music.pause()}
+export function resumeLobbyMusic(){if(musicStarted&&cinematicPauseCount===0)sounds.music.play().catch(()=>{})}
 export function installAudio(){
   document.addEventListener('pointerdown',startMusic,{passive:true});
   document.addEventListener('keydown',startMusic);
