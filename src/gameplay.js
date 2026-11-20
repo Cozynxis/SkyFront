@@ -113,7 +113,7 @@ let yaw=0,pitch=0;
  const lockchange=()=>{
   const wasLocked=locked;
   locked=document.pointerLockElement===renderer.domElement;
-  if(wasLocked&&!locked&&alive){resetInput();document.dispatchEvent(new Event('sf:open-game-menu'))}
+  if(wasLocked&&!locked&&alive){resetInput();if(!inventory.isOpen)document.dispatchEvent(new Event('sf:open-game-menu'))}
  };
  window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',resetInput);document.addEventListener('visibilitychange',visibilityChange);document.addEventListener('mousemove',mouse);document.addEventListener('pointerlockchange',lockchange);renderer.domElement.addEventListener('click',lock);
  function collides(x,z){return structures.some(b=>Math.abs(x-b.x)<b.w/2+.45&&Math.abs(z-b.z)<b.d/2+.45&&b.h>1)}
