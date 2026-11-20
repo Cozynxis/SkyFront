@@ -40,9 +40,7 @@ export function buildSpawnScenery(scene){
  const imported=[];
  let disposed=false;
  const loader=new GLTFLoader();
- const baseUrl=new URL('../public/models/spawn-island/',import.meta.url);
- const assets=import.meta.glob('../public/models/spawn-island/*.glb',{query:'?url',import:'default',eager:true});
- const assetUrl=file=>assets['../public/models/spawn-island/'+file]||new URL(file,baseUrl).href;
+ const assetUrl=file=>(import.meta.env.BASE_URL||'/')+'models/spawn-island/'+file;
  const models=[
   {file:'low-poly_tree.glb',count:24,min:31,max:60,scale:4.2},
   {file:'stylized_bush.glb',count:35,min:21,max:63,scale:2.1},
