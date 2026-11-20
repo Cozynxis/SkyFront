@@ -85,7 +85,7 @@ export function buildSpawnScenery(scene){
     clone.position.set(p.x-center.x,.09-bb.min.y,p.z-center.z);
     scene.add(clone);imported.push(clone);
    }
-  },undefined,error=>{console.warn('Spawn Island model could not be loaded:',def.file,error)});
+  },undefined,error=>{console.error('[SKYFRONT] GLB failed:',assetUrl(def.file),error)});
  }
  return ()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete]){m.map?.dispose();m.dispose()}};
 }
