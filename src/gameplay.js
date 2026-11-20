@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import './gameplay.css';
 
 export function mountGameplay(root,{onExit=()=>{}}={}){
  let alive=true,frame=0,locked=false;
