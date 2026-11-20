@@ -49,3 +49,8 @@
 .sf-hud-slot small{font-size:8px}
 @media(max-width:1100px){.sf-hud-map-wrap{top:12px;right:12px;width:164px}.sf-hud-map{width:164px;height:164px}.sf-hud-match-stats{gap:6px}.sf-hud-match-stats>div{font-size:12px}.sf-hud-vitals{bottom:98px;width:260px}.sf-hud-inventory{right:12px;bottom:12px;width:330px}.sf-hud-slot{height:53px}}
 @media(max-width:760px){.sf-hud-map-wrap{top:14px;right:10px;width:130px}.sf-hud-map{width:130px;height:130px}.sf-hud-match-stats{gap:3px}.sf-hud-match-stats>div{font-size:10px;gap:2px}.sf-hud-stat-icon{font-size:12px}.sf-hud-vitals{left:12px;bottom:102px;transform:none;width:min(255px,55vw)}.sf-hud-inventory{bottom:12px;left:12px;right:12px;width:auto}.sf-hud-slot{height:49px}.sf-hud-slot svg{width:24px;height:24px}.sf-hud-resources{font-size:9px}}
+
+/* Compact hotbar without redundant heading or early-access label. */
+.sf-hud-inventory{bottom:22px}
+.sf-hud-slot-item{font-size:28px;line-height:1}
+.sf-hud-slot small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
