@@ -9,7 +9,7 @@ const categories={
  other:{title:'OTHER',icon:'☰',desc:'Anything else you need help with',fields:[['topic','TOPIC','input']]}
 };
 let overlay=null,view='home',selectedTicket=null,adminMode=false,records=[],messages=[],admin=false,refreshTimer=null,channel=null;
-let requestVersion=0,adminFilter='active',searchTerm='',lastSignature='',busy=false;
+let requestVersion=0,adminFilter='active',categoryFilter='all',searchTerm='',lastSignature='',busy=false;
 let embeddedHost=null;
 const date=v=>new Date(v).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
 function status(s){return ({open:'OPEN',in_progress:'IN PROGRESS',waiting:'WAITING FOR PLAYER',closed:'CLOSED'})[s]||s}
@@ -85,10 +85,11 @@ function render(){
   };
  }else if(view==='tickets'){
   const list=records.filter(t=>adminMode||t.status!=='closed');
-  body.innerHTML='<div class="sf-support-toolbar">'+button('← BACK',adminMode?'admin-home':'home')+'</div><div class="sf-support-intro"><strong>'+(adminMode?'ALL SUPPORT TICKETS':'YOUR TICKETS')+'</strong><p>'+(adminMode?'Review, respond and resolve player requests.':'View replies and track the progress of your requests.')+'</p></div><div class="sf-support-filters">'+(adminMode?'<select data-filter><option value="active" '+(adminFilter==='active'?'selected':'')+'>ACTIVE TICKETS</option><option value="all" '+(adminFilter==='all'?'selected':'')+'>ALL TICKETS</option><option value="closed" '+(adminFilter==='closed'?'selected':'')+'>CLOSED</option></select>':'')+'<input data-search placeholder="Search tickets by subject or category…" value="'+esc(searchTerm)+'" aria-label="Search tickets"></div><div class="sf-support-list"></div>';
+  body.innerHTML='<div class="sf-support-toolbar">'+button('← BACK',adminMode?'admin-home':'home')+'</div><div class="sf-support-intro"><strong>'+(adminMode?'ALL SUPPORT TICKETS':'YOUR TICKETS')+'</strong><p>'+(adminMode?'Review, respond and resolve player requests.':'View replies and track the progress of your requests.')+'</p></div><div class="sf-support-filters">'+(adminMode?'<select data-filter><option value="active" '+(adminFilter==='active'?'selected':'')+'>ACTIVE TICKETS</option><option value="all" '+(adminFilter==='all'?'selected':'')+'>ALL TICKETS</option><option value="closed" '+(adminFilter==='closed'?'selected':'')+'>CLOSED</option></select><select data-category-filter aria-label="Filter tickets by category"><option value="all">ALL CATEGORIES</option>'+Object.entries(categories).map(([key,c])=>'<option value="'+key+'" '+(categoryFilter===key?'selected':'')+'>'+c.title+'</option>').join('')+'</select>':'')+'<input data-search placeholder="Search tickets by subject or category…" value="'+esc(searchTerm)+'" aria-label="Search tickets"></div><div class="sf-support-list"></div>';
   const listHost=body.querySelector('.sf-support-list');
-  const draw=()=>{const filter=adminMode?adminFilter:'all';const filtered=list.filter(t=>(filter==='all'||filter==='active'&&t.status!=='closed'||filter==='closed'&&t.status==='closed')&&[t.subject,t.username,t.category,t.description].some(v=>String(v||'').toLowerCase().includes(searchTerm.toLowerCase())));listHost.innerHTML=filtered.length?filtered.map(t=>'<button class="sf-support-ticket" data-ticket="'+esc(t.id)+'"><span><strong>'+esc(t.subject)+'</strong><small>'+esc(categories[t.category]?.title||t.category)+' · '+(adminMode?esc(t.username)+' · ':'')+date(t.created_at)+'</small></span><b class="sf-support-status" data-status="'+esc(t.status)+'">'+status(t.status)+'</b><i>›</i></button>').join(''):'<p class="sf-support-empty">No tickets found.</p>';listHost.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=async()=>{selectedTicket=b.dataset.ticket;view='detail';await load()})};
+  const draw=()=>{const filter=adminMode?adminFilter:'all';const filtered=list.filter(t=>(filter==='all'||filter==='active'&&t.status!=='closed'||filter==='closed'&&t.status==='closed')&&(!adminMode||categoryFilter==='all'||t.category===categoryFilter)&&[t.subject,t.username,t.category,t.description].some(v=>String(v||'').toLowerCase().includes(searchTerm.toLowerCase())));listHost.innerHTML=filtered.length?filtered.map(t=>'<button class="sf-support-ticket" data-ticket="'+esc(t.id)+'"><span><strong>'+esc(t.subject)+'</strong><small>'+esc(categories[t.category]?.title||t.category)+' · '+(adminMode?esc(t.username)+' · ':'')+date(t.created_at)+'</small></span><b class="sf-support-status" data-status="'+esc(t.status)+'">'+status(t.status)+'</b><i>›</i></button>').join(''):'<p class="sf-support-empty">No tickets found.</p>';listHost.querySelectorAll('[data-ticket]').forEach(b=>b.onclick=async()=>{selectedTicket=b.dataset.ticket;view='detail';await load()})};
   body.querySelector('[data-filter]')?.addEventListener('change',e=>{adminFilter=e.target.value;draw()});
+  body.querySelector('[data-category-filter]')?.addEventListener('change',e=>{categoryFilter=e.target.value;draw()});
   body.querySelector('[data-search]')?.addEventListener('input',e=>{searchTerm=e.target.value;draw()});draw();
  }else if(view==='detail'){
   const t=records.find(t=>t.id===selectedTicket);if(!t){view='tickets';render();return}
@@ -109,7 +110,7 @@ function render(){
 async function open(isAdmin,host=null){
  closeSupport();
  embeddedHost=host;
- adminMode=isAdmin;view=isAdmin?'admin-home':'home';selectedTicket=null;messages=[];searchTerm='';adminFilter='active';lastSignature='';busy=false;shell();await load({force:true});
+ adminMode=isAdmin;view=isAdmin?'admin-home':'home';selectedTicket=null;messages=[];searchTerm='';adminFilter='active';categoryFilter='all';lastSignature='';busy=false;shell();await load({force:true});
  refreshTimer=setInterval(()=>{if(!overlay?.hidden)void load()},12000);
  channel=supabase.channel('sf-support-'+(isAdmin?'admin':'player')).on('postgres_changes',{event:'*',schema:'public',table:'sf_support_tickets'},()=>{if(!overlay.hidden)void load()}).on('postgres_changes',{event:'*',schema:'public',table:'sf_support_messages'},()=>{if(!overlay.hidden)void load()}).subscribe();
 }
