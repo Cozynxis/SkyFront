@@ -5,20 +5,26 @@ const ICONS={
  pickaxe:'⛏',rifle:'⌁',potion:'⬡'
 };
 const STARTER={id:'training-rifle',name:'TRAINING RIFLE',kind:'rifle',rarity:'rare',damage:28,fireRate:5.5,magazine:30,description:'A practice weapon for Spawn Island. Combat is not implemented yet.'};
+const SECOND={id:'burst-blaster',name:'BURST BLASTER',kind:'rifle',rarity:'epic',damage:34,fireRate:3.2,magazine:18,description:'A second test weapon for swapping inventory slots.'};
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
 export function mountInventory({root,scene,position,camera,renderer,onChange=()=>{}}){
  const slots=[{id:'pickaxe',name:'PICKAXE',kind:'pickaxe',rarity:'common',damage:20,description:'Your harvesting tool.'},null,null,null,null,null];
  let selected=0,opened=false,inspecting=false,holdTimer=null,near=false;
  const pickups=[];
- const group=new THREE.Group();
- const body=new THREE.Mesh(new THREE.BoxGeometry(.75,.24,.17),new THREE.MeshStandardMaterial({color:0x4287de,metalness:.45,roughness:.3}));
- const handle=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,1.15,10),new THREE.MeshStandardMaterial({color:0x333d53,roughness:.8}));
- handle.rotation.z=.3;
- group.add(body,handle);
- const glow=new THREE.PointLight(0x54baff,1.8,5);glow.position.y=.5;group.add(glow);
- group.position.set(3,1.3,7);
- scene.add(group);
- pickups.push({item:{...STARTER},mesh:group});
+ function spawnWeapon(item,x,z){
+  const mesh=new THREE.Group();
+  const color=item.rarity==='epic'?0xa63cf0:0x4287de;
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.75,.24,.17),new THREE.MeshStandardMaterial({color,metalness:.45,roughness:.3}));
+  const grip=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.55,10),new THREE.MeshStandardMaterial({color:0x333d53,roughness:.8}));
+  grip.position.set(-.12,-.3,0);grip.rotation.z=.3;
+  mesh.add(body,grip);
+  const glow=new THREE.PointLight(item.rarity==='epic'?0xb65aff:0x54baff,1.8,5);
+  glow.position.y=.5;mesh.add(glow);
+  mesh.position.set(x,1.3,z);
+  scene.add(mesh);pickups.push({item:{...item},mesh});
+ }
+ spawnWeapon(STARTER,3,7);
+ spawnWeapon(SECOND,-3,7);
  const ui=document.createElement('div');ui.className='sf-inventory-ui';ui.innerHTML=`
  <div class="sf-pickup-hint" hidden><kbd>E</kbd><div><strong>PICK UP</strong><span>TRAINING RIFLE · RARE</span></div></div>
  <div class="sf-inventory-backdrop" hidden></div>
@@ -69,7 +75,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
  function close(){if(!opened)return;opened=false;panel.hidden=true;backdrop.hidden=true;ui.classList.remove('is-open');swapFrom=null;stopInspect()}
  function toggle(){opened?close():open()}
  function pickup(){
-  const found=pickups.find(p=>p.mesh.parent&&Math.hypot(position.x-p.mesh.position.x,position.z-p.mesh.position.z)<3.2);
+  const found=pickups.filter(p=>p.mesh.parent).map(p=>({p,d:Math.hypot(position.x-p.mesh.position.x,position.z-p.mesh.position.z)})).filter(x=>x.d<3.2).sort((a,b)=>a.d-b.d)[0]?.p;
   if(!found)return false;
   const free=slots.findIndex((s,i)=>i>0&&!s);
   if(free<0){hint.querySelector('strong').textContent='INVENTORY FULL';return false}
@@ -78,12 +84,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
  function drop(){
   const item=slots[selected];if(!item||item.kind==='pickaxe')return;
   slots[selected]=null;
-  const mesh=new THREE.Group();
-  const m=new THREE.Mesh(new THREE.BoxGeometry(.75,.24,.17),new THREE.MeshStandardMaterial({color:0x4287de,metalness:.45,roughness:.3}));
-  const h=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,1.15,10),new THREE.MeshStandardMaterial({color:0x333d53}));
-  h.rotation.z=.3;mesh.add(m,h);
-  mesh.position.set(position.x-Math.sin(camera.rotation.y)*2,1.3,position.z-Math.cos(camera.rotation.y)*2);
-  scene.add(mesh);pickups.push({item,mesh});render();
+  spawnWeapon(item,position.x-Math.sin(camera.rotation.y)*2,position.z-Math.cos(camera.rotation.y)*2);render();
  }
  function startInspect(){
   if(inspecting)return;
@@ -108,7 +109,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
   close,
   update(t){
    let nearest=null;
-   for(const p of pickups){if(!p.mesh.parent)continue;p.mesh.rotation.y+=t*.7;p.mesh.position.y=1.3+Math.sin(performance.now()*.003)*.14;if(Math.hypot(position.x-p.mesh.position.x,position.z-p.mesh.position.z)<3.2)nearest=p}
+   for(const p of pickups){if(!p.mesh.parent)continue;p.mesh.rotation.y+=t*.7;p.mesh.position.y=1.3+Math.sin(performance.now()*.003)*.14;if(Math.hypot(position.x-p.mesh.position.x,position.z-p.mesh.position.z)<3.2&&(!nearest||Math.hypot(position.x-p.mesh.position.x,position.z-p.mesh.position.z)<Math.hypot(position.x-nearest.mesh.position.x,position.z-nearest.mesh.position.z)))nearest=p}
    hint.hidden=opened||!nearest||isPaused();
    if(nearest){hint.querySelector('strong').textContent='PICK UP';hint.querySelector('span').textContent=nearest.item.name+' · '+nearest.item.rarity.toUpperCase()}
   },
