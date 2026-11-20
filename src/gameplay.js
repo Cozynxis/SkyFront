@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import './gameplay.css';
+import {supabase} from './community.js';
 
 export function mountGameplay(root,{onExit=()=>{}}={}){
- let alive=true,frame=0,locked=false;
+ let alive=true,frame=0,locked=false,phase='waiting',countdown=25,phaseClock=0,partyChannel=null,partyId=null,playerId=null,partyRoster=[],lastRosterUpdate=0;
  const scene=new THREE.Scene();scene.background=new THREE.Color('#8bc8ed');scene.fog=new THREE.Fog('#8bc8ed',38,150);
  const camera=new THREE.PerspectiveCamera(75,1,.1,250);
  const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'low-power'});
@@ -41,10 +42,64 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
  for(let i=0;i<6;i++){const x=-22+i*8;block(x,23,2,2,1.3,'#ab9879')}
  for(let i=0;i<5;i++){const x=-18+i*9;block(x,-5,2.2,2.2,.9,'#a1b7c0')}
 
- const position=new THREE.Vector3(0,1.75,11);let yaw=0,pitch=0;
+ const position=new THREE.Vector3(0,1.75,11);
+ const remoteAvatars=new Map();
+ const avatarMaterial=new THREE.MeshStandardMaterial({color:'#f4ca89',roughness:.82});
+ const shirtMaterial=new THREE.MeshStandardMaterial({color:'#2688c9',roughness:.8});
+ const remoteGeo=new THREE.CapsuleGeometry(.4,.85,4,8);
+ const headGeo=new THREE.SphereGeometry(.27,12,8);
+ function syncAvatars(){
+  const other=partyRoster.filter(p=>p.member_id!==playerId&&p.user_id!==playerId);
+  for(const [id,obj] of remoteAvatars){if(!other.some(p=>(p.member_id||p.user_id)===id)){scene.remove(obj);remoteAvatars.delete(id)}}
+  other.forEach((p,i)=>{
+   const id=p.member_id||p.user_id;if(!id)return;
+   let obj=remoteAvatars.get(id);
+   if(!obj){obj=new THREE.Group();const torso=new THREE.Mesh(remoteGeo,shirtMaterial);torso.position.y=1.2;obj.add(torso);const head=new THREE.Mesh(headGeo,avatarMaterial);head.position.y=2.1;obj.add(head);scene.add(obj);remoteAvatars.set(id,obj)}
+   obj.position.set(-5+i*3,0,9);
+  });
+ }
+ async function loadParty(){
+  try{
+   const {data:{user}}=await supabase.auth.getUser();if(!alive)return;
+   playerId=user?.id||null;
+   if(!playerId){partyRoster=[];syncAvatars();return}
+   const {data,error}=await supabase.rpc('sf_party_view');if(error)throw error;
+   partyRoster=(data||[]).map(p=>({...p,user_id:p.member_id||p.user_id}));
+   const nextId=partyRoster[0]?.party_id||null;
+   if(nextId!==partyId){
+    if(partyChannel){await supabase.removeChannel(partyChannel);partyChannel=null}
+    partyId=nextId;
+    if(partyId){
+     partyChannel=supabase.channel('sf-spawn-'+partyId,{config:{presence:{key:playerId}}});
+     partyChannel.on('presence',{event:'sync'},()=>{
+      const members=Object.values(partyChannel.presenceState()).flat();
+      if(alive)onlineLabel.textContent=members.length+' CONNECTED IN PARTY';
+     }).on('broadcast',{event:'start'},({payload})=>{
+      if(!alive||phase!=='waiting')return;
+      countdown=Math.max(1,Math.min(60,Number(payload?.countdown)||25));
+      phaseClock=0;
+     }).subscribe(async status=>{if(status==='SUBSCRIBED')await partyChannel.track({user_id:playerId,joined_at:Date.now()})});
+    }
+   }
+   syncAvatars();
+  }catch(error){console.warn('Spawn Island party sync:',error)}
+ }
+let yaw=0,pitch=0;
  const keys=new Set();let last=performance.now();
  const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · ESC UNLOCK MOUSE</div><button type="button" class="sf-game-exit">RETURN TO LOBBY</button>';
  root.append(hud);
+ const spawnStatus=hud.querySelector('.sf-spawn-status');
+ spawnStatus.innerHTML='<strong>SPAWN ISLAND</strong><span class="sf-spawn-countdown">BATTLE BUS IN 25s</span><small class="sf-spawn-online">WAITING FOR PLAYERS</small>';
+ const countdownLabel=spawnStatus.querySelector('.sf-spawn-countdown'),onlineLabel=spawnStatus.querySelector('.sf-spawn-online');
+ const bus=new THREE.Group();bus.visible=false;scene.add(bus);
+ const busBody=new THREE.Mesh(new THREE.BoxGeometry(5,2.3,2.6),new THREE.MeshStandardMaterial({color:'#278bda',roughness:.55}));bus.add(busBody);
+ const balloon=new THREE.Mesh(new THREE.SphereGeometry(3.6,20,14),new THREE.MeshStandardMaterial({color:'#60c9f6',roughness:.7}));balloon.position.y=5.2;bus.add(balloon);
+ const ropes=new THREE.MeshStandardMaterial({color:'#e8e3c8'});
+ for(const x of [-1.7,1.7])for(const z of [-.8,.8]){const rope=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,4.5,5),ropes);rope.position.set(x,2.8,z);bus.add(rope)}
+ bus.position.set(-60,22,-35);
+ const busBanner=document.createElement('div');busBanner.className='sf-bus-banner';busBanner.hidden=true;busBanner.innerHTML='<strong>THE BATTLE BUS IS HERE!</strong><span>Battle Royale map coming soon · Spawn Island preview</span>';hud.append(busBanner);
+ void loadParty();
+
  const exit=()=>{dispose();onExit()};
  hud.querySelector('.sf-game-exit').addEventListener('click',exit);
  const keydown=e=>{if(['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){keys.add(e.code);e.preventDefault()}};
@@ -57,6 +112,10 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
  function tick(now){
   if(!alive)return;frame=requestAnimationFrame(tick);
   const dt=Math.min((now-last)/1000,.05);last=now;
+  lastRosterUpdate+=dt;if(lastRosterUpdate>4){lastRosterUpdate=0;void loadParty()}
+  phaseClock+=dt;
+  if(phase==='waiting'){countdown=Math.max(0,countdown-dt);countdownLabel.textContent='BATTLE BUS IN '+Math.ceil(countdown)+'s';if(countdown<=0){phase='bus';phaseClock=0;bus.visible=true;busBanner.hidden=false;spawnStatus.querySelector('strong').textContent='BATTLE BUS ARRIVING';countdownLabel.textContent='SPAWN ISLAND PREVIEW'}}
+  if(phase==='bus'){bus.position.x=-60+Math.min(120,phaseClock*12);bus.position.y=22+Math.sin(phaseClock*.9)*1.2;bus.rotation.y=.1;if(phaseClock>11){phase='complete';bus.visible=false;spawnStatus.querySelector('strong').textContent='SPAWN ISLAND';countdownLabel.textContent='BATTLE ROYALE MAP COMING SOON'}}
   const width=root.clientWidth,height=root.clientHeight;
   if(width&&height){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}
   const forward=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),side=Number(keys.has('KeyD'))-Number(keys.has('KeyA'));
@@ -75,6 +134,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
   if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
   window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
+  if(partyChannel)void supabase.removeChannel(partyChannel);
   renderer.dispose();renderer.domElement.remove();hud.remove();
  }
  return dispose;
