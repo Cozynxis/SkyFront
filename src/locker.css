@@ -154,3 +154,10 @@
 #sf-filter,#sf-equipped-filter{white-space:nowrap;min-width:42px;padding:9px 11px;border:1px solid #a6d6ff60;border-radius:9px;background:#183f75;color:#e8f6ff;font-size:11px;font-weight:900;cursor:pointer}
 #sf-filter.active,#sf-equipped-filter.active{background:#ffdc65;color:#19335e;border-color:#ffebaa}
 .sf-inventory-tools{flex-wrap:wrap}
+
+/* Interactive SKYFRONT 3D character preview */
+.sf-character-preview{position:relative;z-index:2;width:100%;height:100%;min-height:340px;touch-action:pan-y;cursor:grab;overflow:hidden}
+.sf-character-preview:active{cursor:grabbing}
+.sf-character-canvas{display:block;width:100%;height:100%;outline:none;touch-action:none}
+.sf-preview-stage:has(.sf-character-preview) .sf-preview-platform{opacity:.2;pointer-events:none}
+.sf-preview-stage:has(.sf-character-preview) .sf-preview-glow{pointer-events:none}
