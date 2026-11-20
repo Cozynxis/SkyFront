@@ -15,8 +15,16 @@ export const BR_PLACES=places;
 export function buildBattleRoyaleWorld(scene){
  const root=new THREE.Group();root.name='BattleRoyaleWorld';scene.add(root);
  const materials=[];
+ const colliders=[];
  const mat=(c,extra={})=>{const m=new THREE.MeshStandardMaterial({color:c,roughness:.89,...extra});materials.push(m);return m};
- const grass=mat('#71af65'),sand=mat('#d9c68e'),road=mat('#65747d'),water=mat('#267eac',{roughness:.42}),trunk=mat('#77543a'),leaf=[mat('#36845b'),mat('#4c9b59'),mat('#2d7857')],rock=mat('#81918e');
+ // Procedural grass texture prevents the flat green terrain look without external files.
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=256;
+ const context=canvas.getContext('2d');context.fillStyle='#75b668';context.fillRect(0,0,256,256);
+ let grassSeed=12897;const grassRandom=()=>{grassSeed=(Math.imul(grassSeed,1664525)+1013904223)>>>0;return grassSeed/4294967296};
+ for(let i=0;i<4200;i++){context.fillStyle=i%3===0?'#4e9250':i%3===1?'#9bcc7b':'#62a75b';context.globalAlpha=.15+grassRandom()*.4;context.fillRect(grassRandom()*256,grassRandom()*256,1+grassRandom()*5,1+grassRandom()*7)}
+ context.globalAlpha=1;
+ const grassTexture=new THREE.CanvasTexture(canvas);grassTexture.colorSpace=THREE.SRGBColorSpace;grassTexture.wrapS=grassTexture.wrapT=THREE.RepeatWrapping;grassTexture.repeat.set(65,65);
+ const grass=mat('#ffffff',{map:grassTexture}),sand=mat('#d9c68e'),road=mat('#65747d'),water=mat('#267eac',{roughness:.42}),trunk=mat('#77543a'),leaf=[mat('#36845b'),mat('#4c9b59'),mat('#2d7857')],rock=mat('#81918e');
  const buildings=['#b6c7c9','#d8b6a2','#a9b7d6','#e0d1a9','#b0d3c8'].map(c=>mat(c));
  const roof=mat('#435e7e'),windows=mat('#28455b',{metalness:.2}),line=mat('#f3dfaa');
  const geo=[];const own=(g)=>{geo.push(g);return g};
@@ -47,6 +55,7 @@ export function buildBattleRoyaleWorld(scene){
     box(x+width/2+.07,level,z,.12,1.2,depth*.65,windows);
    }
    footprints.push({x,z,r:Math.max(width,depth)});
+   colliders.push({type:'box',x,z,halfX:width/2,halfZ:depth/2,height});
   }
  }
  const treeTrunk=own(new THREE.CylinderGeometry(.75,1.1,7,6));
@@ -60,12 +69,14 @@ export function buildBattleRoyaleWorld(scene){
   const t=new THREE.Mesh(treeTrunk,trunk);t.position.y=3.5;tree.add(t);
   const crown=new THREE.Mesh(canopy,treeMat[Math.floor(rand()*3)]);crown.position.y=11;tree.add(crown);
   tree.position.set(x,0,z);tree.scale.setScalar(height);tree.rotation.y=rand()*Math.PI*2;root.add(tree);
+  colliders.push({type:'circle',x,z,radius:1.05*height,height:7*height});
  }
  const stoneGeo=own(new THREE.DodecahedronGeometry(3.2,0));
  for(let i=0;i<115;i++){
   const a=rand()*Math.PI*2,r=170+rand()*550,x=Math.cos(a)*r,z=Math.sin(a)*r;
   if(!clear(x,z,4))continue;
   const stone=new THREE.Mesh(stoneGeo,rock);stone.position.set(x,1.6,z);stone.scale.set(.6+rand(),.4+rand()*.7,.6+rand());stone.rotation.y=rand()*6;root.add(stone);
+  colliders.push({type:'circle',x,z,radius:3.2*Math.max(stone.scale.x,stone.scale.z)*.8,height:3.2});
  }
- return {root,places,dispose(){scene.remove(root);geo.forEach(g=>g.dispose());materials.forEach(m=>m.dispose())}};
+ return {root,places,colliders,dispose(){scene.remove(root);geo.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());grassTexture.dispose()}};
 }
