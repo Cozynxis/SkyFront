@@ -64,3 +64,64 @@
 .sf-inventory-equipment p{margin-top:12px;letter-spacing:.05em}
 .sf-inventory-panel footer{border-radius:5px;gap:16px}
 @media(max-width:800px){.sf-inventory-panel{inset:2%}.sf-inventory-body{grid-template-columns:1fr;gap:10px;overflow:auto;padding-top:8px}.sf-inventory-detail{width:100%}.sf-inventory-right{overflow:visible}.sf-inventory-cell{min-height:52px}}
+
+/* Gameplay inventory: leave the upper HUD / minimap unobstructed. */
+.sf-inventory-panel{
+ top:clamp(225px,34vh,380px);
+ bottom:clamp(105px,14vh,170px);
+ left:3%;
+ right:3%;
+ max-width:1480px;
+ margin:0 auto;
+ overflow:visible;
+}
+.sf-inventory-panel header{
+ position:absolute;
+ left:0;
+ right:0;
+ bottom:calc(100% + 12px);
+ padding:0 6px;
+}
+.sf-inventory-panel header button{padding:5px 10px}
+.sf-inventory-body{
+ flex:0 1 auto;
+ min-height:0;
+ overflow:visible;
+ padding:0;
+ align-items:start;
+}
+.sf-inventory-detail{max-height:100%;overflow:auto}
+.sf-inventory-right{overflow:visible}
+.sf-inventory-panel footer{
+ margin-top:12px;
+ padding:0 5px;
+ border:0;
+ border-radius:0;
+ background:transparent;
+ box-shadow:none;
+ justify-content:flex-start;
+}
+.sf-inventory-panel footer .sf-inventory-esc-label{
+ margin-left:auto;
+ display:inline-flex;
+ align-items:center;
+ gap:8px;
+ font-size:16px;
+ font-weight:1000;
+ letter-spacing:.08em;
+ color:#fff;
+ text-shadow:0 2px 6px #000b;
+}
+.sf-inventory-esc-label span{font-size:11px;font-weight:800;color:#d9e7ff}
+@media(max-height:700px){
+ .sf-inventory-panel{top:30vh;bottom:13vh}
+ .sf-inventory-body{overflow:auto}
+ .sf-inventory-detail{max-height:none}
+ .sf-inventory-cell{aspect-ratio:1/0.9}
+}
+@media(max-width:800px){
+ .sf-inventory-panel{top:23vh;bottom:10vh;left:3%;right:3%;overflow:hidden}
+ .sf-inventory-body{overflow:auto;grid-template-columns:1fr;gap:10px}
+ .sf-inventory-panel header{bottom:calc(100% + 6px)}
+ .sf-inventory-panel footer{flex-shrink:0}
+}
