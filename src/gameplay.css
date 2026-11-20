@@ -33,3 +33,7 @@ body.sf-gameplay-active{overflow:hidden}
 .sf-spawn-status small{font-size:9px}
 @media(max-width:1100px){.sf-game-help{bottom:185px;max-width:230px}.sf-game-exit{top:70px}}
 @media(max-width:760px){.sf-game-brand{top:12px;left:12px;font-size:16px}.sf-game-brand span{font-size:8px}.sf-game-exit{top:63px;left:12px;padding:6px 9px}.sf-spawn-status{top:12px;left:50%;max-width:175px;padding:7px 10px}.sf-spawn-status strong{font-size:12px}.sf-spawn-status span{font-size:9px}.sf-spawn-status small{font-size:8px}.sf-game-help{bottom:185px;left:12px;max-width:220px;font-size:8px}}
+
+/* Gameplay tips appear only briefly; exit is handled by the ESC menu. */
+.sf-game-help{opacity:1;transition:opacity 1.3s ease,visibility 1.3s ease}
+.sf-game-help.is-fading{opacity:0;visibility:hidden}
