@@ -10,17 +10,26 @@ const categories={
 };
 let overlay=null,view='home',selectedTicket=null,adminMode=false,records=[],messages=[],admin=false,refreshTimer=null,channel=null;
 let requestVersion=0,adminFilter='active',searchTerm='',lastSignature='',busy=false;
+let embeddedHost=null;
 const date=v=>new Date(v).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
 function status(s){return ({open:'OPEN',in_progress:'IN PROGRESS',waiting:'WAITING FOR PLAYER',closed:'CLOSED'})[s]||s}
 function shell(){
- if(!overlay){overlay=document.createElement('div');overlay.className='sf-support-overlay';overlay.hidden=true;document.body.append(overlay)}
+ if(!overlay){overlay=document.createElement('div');overlay.className='sf-support-overlay';overlay.hidden=true}
+ (embeddedHost||document.body).append(overlay);
+ overlay.classList.toggle('sf-support-embedded',!!embeddedHost);
  overlay.innerHTML='<div class="sf-support-backdrop" data-backdrop></div><section class="sf-support-dialog" role="dialog" aria-modal="true" aria-label="Support portal"><header><div><small>SKYFRONT / '+(adminMode?'ADMINISTRATION':'PLAYER SUPPORT')+'</small><h2>'+(adminMode?'SUPPORT MANAGEMENT':'SUPPORT PORTAL')+'</h2></div><button type="button" data-close aria-label="Close support">×</button></header><div class="sf-support-body"></div></section>';
  overlay.hidden=false;requestAnimationFrame(()=>overlay.classList.add('visible'));
  overlay.querySelector('[data-close]').onclick=closeSupport;
  overlay.querySelector('[data-backdrop]').onclick=closeSupport;
 }
-export function closeSupport(){requestVersion++;if(!overlay)return;
- if(adminMode)window.dispatchEvent(new CustomEvent('skyfront:support-admin-closed'));overlay.classList.remove('visible');overlay.hidden=true;clearInterval(refreshTimer);refreshTimer=null;if(channel){void supabase.removeChannel(channel);channel=null}}
+export function closeSupport(){
+ requestVersion++;if(!overlay)return;
+ const wasEmbedded=!!embeddedHost;
+ overlay.classList.remove('visible');overlay.hidden=true;
+ clearInterval(refreshTimer);refreshTimer=null;
+ if(channel){void supabase.removeChannel(channel);channel=null}
+ if(wasEmbedded){embeddedHost=null;window.dispatchEvent(new CustomEvent('skyfront:support-admin-closed'))}
+}
 async function load({force=false}={}){
  const version=++requestVersion;
  // Never replace a form while somebody is typing or choosing an option.
@@ -97,11 +106,12 @@ function render(){
   view=action;selectedTicket=null;await load({force:true});
  });
 }
-async function open(isAdmin){
+async function open(isAdmin,host=null){
  closeSupport();
+ embeddedHost=host;
  adminMode=isAdmin;view=isAdmin?'admin-home':'home';selectedTicket=null;messages=[];searchTerm='';adminFilter='active';lastSignature='';busy=false;shell();await load({force:true});
  refreshTimer=setInterval(()=>{if(!overlay?.hidden)void load()},12000);
  channel=supabase.channel('sf-support-'+(isAdmin?'admin':'player')).on('postgres_changes',{event:'*',schema:'public',table:'sf_support_tickets'},()=>{if(!overlay.hidden)void load()}).on('postgres_changes',{event:'*',schema:'public',table:'sf_support_messages'},()=>{if(!overlay.hidden)void load()}).subscribe();
 }
 export function openSupportPortal(){return open(false)}
-export function openSupportAdmin(){return open(true)}
+export function openSupportAdmin(host=null){return open(true,host)}
