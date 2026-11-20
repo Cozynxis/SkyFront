@@ -1,5 +1,6 @@
 import {installLobbyNews,refreshLobbyNews} from './lobby-news.js';
-import { mountLocker, unmountLocker } from './locker.js';
+import { mountLocker, unmountLocker, getEquippedSkinName } from './locker.js';
+import { mountCharacterPreview } from './characters.js';
 import { mountShop } from './shop.js';
 import { mountFrontPass } from './frontpass.js';
 import { installAudio, readSettings } from './audio.js';
@@ -42,6 +43,8 @@ let cleanupShop=null;
 let cleanupFrontPass=null;
 let cleanupCareer=null;
 let cleanupCommunity=null;
+const lobbyPreviewCleanup=new Map();
+function clearLobbyPreviews(){for(const cleanup of lobbyPreviewCleanup.values())cleanup();lobbyPreviewCleanup.clear();}
 const app = document.querySelector('#app');
 app.innerHTML = `
   <div class="background" aria-hidden="true"><div class="light light-a"></div><div class="light light-b"></div><div class="horizon"></div><div class="grid-floor"></div></div>
@@ -118,6 +121,7 @@ function setPage(id){
  if(id!=='play')document.dispatchEvent(new Event('sf:leave-play'));
  if(id===current && stage.childElementCount)return;
  unmountLocker();
+ clearLobbyPreviews();
  pageEvents.abort();pageEvents=new AbortController();
  if(cleanupShop){cleanupShop();cleanupShop=null;}
  if(cleanupFrontPass){cleanupFrontPass();cleanupFrontPass=null;}
@@ -238,19 +242,31 @@ function renderLobbyParty(members){
  const players=members.length?members.slice(0,4):[{user_id:'solo',username:document.querySelector('#sf-profile-name')?.firstChild?.textContent?.trim()||'YOU',leader_id:'solo'}];
  const count=players.length;
  const oldCount=scene.dataset.count;
- const ids=new Set(players.map(p=>p.user_id));
- for(const child of [...host.children])if(!ids.has(child.dataset.id))child.remove();
+ const ids=new Set(players.map(p=>String(p.user_id)));
+ for(const child of [...host.children])if(!ids.has(child.dataset.id)){
+  lobbyPreviewCleanup.get(child.dataset.id)?.();lobbyPreviewCleanup.delete(child.dataset.id);
+  child.classList.add('sf-lobby-departing');
+  child.addEventListener('animationend',()=>child.remove(),{once:true});
+  setTimeout(()=>child.remove(),450);
+ }
  for(const p of players){
-  let card=[...host.children].find(el=>el.dataset.id===p.user_id);
+  let card=[...host.children].find(el=>el.dataset.id===String(p.user_id)&&!el.classList.contains('sf-lobby-departing'));
   if(!card){
    card=document.createElement('div');card.className='sf-lobby-player';
-   card.dataset.id=p.user_id;
-   card.innerHTML='<div class="sf-lobby-silhouette"><span>◆</span></div><div class="sf-lobby-platform"><div class="sf-lobby-platform-inner"></div></div><strong></strong><small></small>';
+   card.dataset.id=String(p.user_id);
+   card.innerHTML='<div class="sf-lobby-silhouette sf-lobby-character"></div><div class="sf-lobby-platform"><div class="sf-lobby-platform-inner"></div></div><strong></strong><small></small>';
    host.append(card);
   }
   const index=players.indexOf(p);
-  if(host.children[index]!==card)host.insertBefore(card,host.children[index]||null);
+  const ordered=[...host.children].filter(el=>!el.classList.contains('sf-lobby-departing'));
+  if(ordered[index]!==card)host.insertBefore(card,ordered[index]||null);
   card.style.setProperty('--slot',index);
+  const skinName=p.user_id==='solo'||p.is_self?getEquippedSkinName():(p.skin_name||'Jaxon');
+  if(card.dataset.skin!==skinName||!lobbyPreviewCleanup.has(card.dataset.id)){
+   lobbyPreviewCleanup.get(card.dataset.id)?.();
+   card.dataset.skin=skinName;
+   lobbyPreviewCleanup.set(card.dataset.id,mountCharacterPreview(card.querySelector('.sf-lobby-character'),skinName,{lobby:true}));
+  }
   card.classList.toggle('is-leader',p.user_id===p.leader_id);
   card.querySelector('strong').textContent=p.username||'Player';
   card.querySelector('small').textContent=p.user_id===p.leader_id?'♛ PARTY LEADER':'PARTY MEMBER';
@@ -258,6 +274,7 @@ function renderLobbyParty(members){
  if(oldCount!==String(count))requestAnimationFrame(()=>{if(scene.isConnected)scene.dataset.count=String(count)});
 }
 document.addEventListener('sf:party-update',e=>{window.__sfPartyMembers=e.detail.members;renderLobbyParty(e.detail.members);});
+window.addEventListener('skyfront:cosmetic-changed',()=>{if(current==='play')renderLobbyParty(window.__sfPartyMembers||[]);});
 
 const partyNoticeSound=new Audio(import.meta.env.BASE_URL+'audio/Notification.mp3');
 partyNoticeSound.volume=readSettings().notifications?readSettings().notificationVolume/100:0;
