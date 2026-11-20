@@ -98,7 +98,7 @@ export function installSupportNotifications(){
 export async function openSupportTicket(ticketId){
  await open(false);
  if(!overlay||overlay.hidden)return;
- const t=records.find(item=>item.id===ticketId&&item.status!=='closed');
+ const t=records.find(item=>item.id===ticketId);
  if(t){selectedTicket=t.id;view='detail';await load({force:true})}
  else{view='tickets';await load({force:true})}
 }
@@ -162,7 +162,7 @@ function render(){
   body.querySelectorAll('[data-category]').forEach(b=>b.onclick=()=>{view=b.dataset.category;render()});
  }else if(categories[view]&&!adminMode){
   const c=categories[view];
-  body.innerHTML='<div class="sf-support-toolbar">'+button('← BACK','home')+'</div><div class="sf-support-intro"><strong>'+c.title+'</strong><p>'+c.desc+'</p></div><form class="sf-support-form"><label>SUBJECT<input name="subject" minlength="5" maxlength="120" placeholder="Briefly describe your request" required></label>'+c.fields.map(([key,label,type,opts])=>'<label>'+label+(type==='select'?'<select name="'+key+'">'+opts.map(o=>'<option>'+esc(o)+'</option>').join('')+'</select>':type==='textarea'?'<textarea name="'+key+'" rows="3" maxlength="1500" required></textarea>':'<input name="'+key+'" maxlength="150" required>')+'</label>').join('')+'<label>DESCRIPTION<textarea name="description" minlength="10" maxlength="6000" rows="5" placeholder="Tell us what happened or what you would like to see..." required></textarea></label><p class="sf-support-notice" role="status"></p><button class="sf-support-primary" type="submit">SUBMIT TICKET</button></form>';
+  body.innerHTML='<div class="sf-support-toolbar">'+button('← BACK','home')+'</div><div class="sf-support-intro"><strong>'+c.title+'</strong><p>'+c.desc+'</p></div><form class="sf-support-form"><label>SUBJECT<input name="subject" minlength="5" maxlength="120" placeholder="Briefly describe your request" required></label>'+c.fields.map(([key,label,type,opts])=>'<label>'+label+(type==='select'?'<select name="'+key+'">'+opts.map(o=>'<option>'+esc(o)+'</option>').join('')+'</select>':type==='textarea'?'<textarea name="'+key+'" rows="3" maxlength="1500" required></textarea>':'<input name="'+key+'" maxlength="150" required>')+'</label>').join('')+'<label>DESCRIPTION<textarea name="description" minlength="10" maxlength="6000" rows="5" placeholder="Tell us what happened or what you would like to see..." required></textarea></label>'+attachmentsInput+'<p class="sf-support-notice" role="status"></p><button class="sf-support-primary" type="submit">SUBMIT TICKET</button></form>';
   const form=body.querySelector('form');
   form.onsubmit=async e=>{
    busy=true;
