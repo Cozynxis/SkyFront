@@ -20,6 +20,7 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  <div class="sf-hud-vitals">
   <div class="sf-hud-vital sf-hud-shield"><span class="sf-hud-vital-symbol">◆</span><div class="sf-hud-vital-track"><i data-hud-shield-bar></i></div><strong data-hud-shield>0</strong></div>
   <div class="sf-hud-vital sf-hud-health"><span class="sf-hud-vital-symbol">✚</span><div class="sf-hud-vital-track"><i data-hud-health-bar></i></div><strong data-hud-health>100</strong></div>
+  <div class="sf-hud-stamina" data-hud-stamina-wrap aria-label="Sprint stamina"><span class="sf-hud-stamina-icon">⚡</span><div class="sf-hud-stamina-track"><i data-hud-stamina-bar></i></div></div>
  </div>
  <div class="sf-hud-inventory" aria-label="Inventory">
   
@@ -32,6 +33,9 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  const canvas=el.querySelector('canvas'),ctx=canvas.getContext('2d');
  const slots=[...el.querySelectorAll('[data-slot]')];
  let active=0,health=100,shield=0,kills=0,players=1,seconds=25;
+ const staminaWrap=el.querySelector('[data-hud-stamina-wrap]');
+ const staminaBar=el.querySelector('[data-hud-stamina-bar]');
+ let staminaVisibleUntil=0;
  let inventoryItems=[{name:'PICKAXE',kind:'pickaxe'},null,null,null,null,null];
  const update=()=>{
   el.querySelector('[data-hud-health]').textContent=Math.round(health);
@@ -75,6 +79,16 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  update();drawMap();
  let lastX=NaN,lastZ=NaN;
  return {
+  setStamina(value,sprinting,exhausted){
+   if(!staminaWrap||!staminaBar)return;
+   const amount=Math.max(0,Math.min(100,value));
+   staminaBar.style.width=amount+'%';
+   if(sprinting||amount<99.9)staminaVisibleUntil=performance.now()+1100;
+   const visible=sprinting||amount<99.9||performance.now()<staminaVisibleUntil;
+   staminaWrap.classList.toggle('is-visible',visible);
+   staminaWrap.classList.toggle('is-exhausted',exhausted);
+   staminaWrap.setAttribute('aria-valuenow',String(Math.round(amount)));
+  },
   setInventory(items,index){inventoryItems=items;active=index;update()},
   setState(next={}){if(next.health!==undefined)health=Math.max(0,Math.min(100,next.health));if(next.shield!==undefined)shield=Math.max(0,Math.min(100,next.shield));if(next.kills!==undefined)kills=Math.max(0,next.kills);if(next.players!==undefined)players=Math.max(1,next.players);if(next.seconds!==undefined)seconds=Math.max(0,next.seconds);update()},
   updatePosition(){if(position&&(position.x!==lastX||position.z!==lastZ)){lastX=position.x;lastZ=position.z;drawMap()}},
