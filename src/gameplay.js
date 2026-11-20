@@ -3,6 +3,7 @@ import './gameplay.css';
 import {supabase} from './community.js';
 import {buildSpawnScenery} from './spawn-scenery.js';
 import {mountGameHud} from './game-hud.js';
+import {mountInventory} from './inventory.js';
 
 export function mountGameplay(root,{onExit=()=>{}}={}){
  let alive=true,frame=0,locked=false,phase='waiting',countdown=25,phaseClock=0,partyChannel=null,partyId=null,playerId=null,partyRoster=[],lastRosterUpdate=0;
@@ -27,6 +28,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
 
  const position=new THREE.Vector3(0,1.75,11);
  const gameHud=mountGameHud(root,{position});
+ const inventory=mountInventory({root,scene,position,camera,renderer,onChange:(items,selected)=>gameHud.setInventory(items,selected)});
  const remoteAvatars=new Map();
  const avatarMaterial=new THREE.MeshStandardMaterial({color:'#f4ca89',roughness:.82});
  const shirtMaterial=new THREE.MeshStandardMaterial({color:'#2688c9',roughness:.8});
@@ -100,7 +102,7 @@ let yaw=0,pitch=0;
    // When pointer-locked, Escape unlocks it; lockchange opens the menu.
    return;
   }
-  if(movementCodes.includes(e.code)){keys.add(e.code);e.preventDefault()}
+  if(movementCodes.includes(e.code)&&!inventory.isOpen&&!document.querySelector('.sf-account-layer.open')){keys.add(e.code);e.preventDefault()}
  };
  const keyup=e=>keys.delete(e.code);
  const resetInput=()=>{keys.clear();moveVelocity.set(0,0)};
@@ -125,8 +127,8 @@ let yaw=0,pitch=0;
   if(width&&height){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}
   // Camera-relative movement: W goes where the camera faces, A goes left.
   // Derive horizontal directions from the camera's yaw to avoid reversed strafing.
-  const forward=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
-  const strafe=Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));
+  const forward=inventory.isOpen||document.querySelector('.sf-account-layer.open')?0:Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
+  const strafe=inventory.isOpen||document.querySelector('.sf-account-layer.open')?0:Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));
   const length=Math.hypot(forward,strafe);
   const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?10.5:6.5;
   forwardVector.set(-Math.sin(yaw),0,-Math.cos(yaw));
@@ -140,6 +142,7 @@ let yaw=0,pitch=0;
   if(!collides(position.x+dx,position.z))position.x+=dx;else moveVelocity.x=0;
   if(!collides(position.x,position.z+dz))position.z+=dz;else moveVelocity.y=0;
   const radius=Math.hypot(position.x,position.z);if(radius>68){position.x*=68/radius;position.z*=68/radius}
+  inventory.update(dt);
   gameHud.updatePosition();
   camera.position.copy(position);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
   renderer.render(scene,camera);
@@ -153,6 +156,7 @@ let yaw=0,pitch=0;
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
   if(partyChannel)void supabase.removeChannel(partyChannel);
   disposeScenery();
+  inventory.dispose();
   gameHud.dispose();
   renderer.dispose();renderer.domElement.remove();hud.remove();
  }
