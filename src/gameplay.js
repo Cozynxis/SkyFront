@@ -27,6 +27,7 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
  const disposeScenery=buildSpawnScenery(scene);
 
  const position=new THREE.Vector3(0,1.75,11);
+ const movement={stamina:100,exhausted:false,regenDelay:0,crouched:false,crouchBlend:0,bobPhase:0,bobAmount:0,viewY:1.75,roll:0};
  const gameHud=mountGameHud(root,{position});
  const inventory=mountInventory({root,scene,position,camera,renderer,onChange:(items,selected)=>gameHud.setInventory(items,selected)});
  const remoteAvatars=new Map();
@@ -76,7 +77,7 @@ let yaw=0,pitch=0;
  const moveVelocity=new THREE.Vector2();
  const forwardVector=new THREE.Vector3();
  const rightVector=new THREE.Vector3();
- const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · ESC MENU · I INVENTORY</div>';
+ const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · CTRL / C CROUCH · ESC MENU · I INVENTORY</div>';
  root.append(hud);
  const spawnStatus=hud.querySelector('.sf-spawn-status');
  spawnStatus.innerHTML='<strong>SPAWN ISLAND</strong><span class="sf-spawn-countdown">BATTLE BUS IN 25s</span><small class="sf-spawn-online">WAITING FOR PLAYERS</small>';
@@ -95,7 +96,7 @@ let yaw=0,pitch=0;
  document.addEventListener('sf:leave-gameplay',leaveFromMenu);
  const helpTip=hud.querySelector('.sf-game-help');
  const helpFadeTimer=window.setTimeout(()=>{if(alive)helpTip.classList.add('is-fading')},5000);
- const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+ const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ControlLeft','ControlRight','KeyC','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const keydown=e=>{
   if(e.code==='Escape'){
    if(inventory.isOpen){e.preventDefault();inventory.close();return}
@@ -132,12 +133,30 @@ let yaw=0,pitch=0;
   const forward=inventory.isOpen||document.querySelector('.sf-account-layer.open')?0:Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
   const strafe=inventory.isOpen||document.querySelector('.sf-account-layer.open')?0:Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));
   const length=Math.hypot(forward,strafe);
-  const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?10.5:6.5;
+  const blocked=inventory.isOpen||Boolean(document.querySelector('.sf-account-layer.open'))||document.hidden;
+  const crouchHeld=keys.has('ControlLeft')||keys.has('ControlRight')||keys.has('KeyC');
+  movement.crouched=!blocked&&crouchHeld;
+  const sprintHeld=keys.has('ShiftLeft')||keys.has('ShiftRight');
+  const wantsSprint=!blocked&&!movement.crouched&&sprintHeld&&forward>0&&length>0;
+  if(movement.stamina<=0.01)movement.exhausted=true;
+  if(movement.exhausted&&movement.stamina>=35)movement.exhausted=false;
+  const sprinting=wantsSprint&&!movement.exhausted&&movement.stamina>0;
+  if(sprinting){
+   movement.stamina=Math.max(0,movement.stamina-19*dt);
+   movement.regenDelay=0.85;
+  }else{
+   movement.regenDelay=Math.max(0,movement.regenDelay-dt);
+   if(movement.regenDelay===0)movement.stamina=Math.min(100,movement.stamina+24*dt);
+  }
+  if(movement.stamina===0)movement.exhausted=true;
+  const speed=movement.crouched?3.05:sprinting?8.15:6.1;
+  gameHud.setStamina(movement.stamina,sprinting,movement.exhausted);
+  movement.crouchBlend=THREE.MathUtils.damp(movement.crouchBlend,movement.crouched?1:0,11,dt);
   forwardVector.set(-Math.sin(yaw),0,-Math.cos(yaw));
   rightVector.set(Math.cos(yaw),0,-Math.sin(yaw));
   const desiredX=length>0?(forwardVector.x*forward+rightVector.x*strafe)/length*speed:0;
   const desiredZ=length>0?(forwardVector.z*forward+rightVector.z*strafe)/length*speed:0;
-  const smoothing=1-Math.exp(-(length>0?17:22)*dt);
+  const smoothing=1-Math.exp(-(length>0?10:13)*dt);
   moveVelocity.x=THREE.MathUtils.lerp(moveVelocity.x,desiredX,smoothing);
   moveVelocity.y=THREE.MathUtils.lerp(moveVelocity.y,desiredZ,smoothing);
   const dx=moveVelocity.x*dt,dz=moveVelocity.y*dt;
@@ -146,7 +165,16 @@ let yaw=0,pitch=0;
   const radius=Math.hypot(position.x,position.z);if(radius>68){position.x*=68/radius;position.z*=68/radius}
   inventory.update(dt);
   gameHud.updatePosition();
-  camera.position.copy(position);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
+  const actualSpeed=moveVelocity.length();
+  const moving=actualSpeed>0.22&&!blocked;
+  movement.bobAmount=THREE.MathUtils.damp(movement.bobAmount,moving?Math.min(1,actualSpeed/6.1):0,9,dt);
+  if(moving)movement.bobPhase+=dt*actualSpeed*(movement.crouched?1.18:1.65);
+  const bobVertical=Math.sin(movement.bobPhase*2)*0.023*movement.bobAmount*(movement.crouched?.45:1);
+  const bobSide=Math.cos(movement.bobPhase)*0.015*movement.bobAmount*(movement.crouched?.5:1);
+  movement.viewY=THREE.MathUtils.damp(movement.viewY,1.75-movement.crouchBlend*0.63,12,dt);
+  movement.roll=THREE.MathUtils.damp(movement.roll,-strafe*0.011*(movement.crouched?.6:1),9,dt);
+  camera.position.set(position.x+bobSide,movement.viewY+bobVertical,position.z);
+  camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,movement.roll);
   renderer.render(scene,camera);
  }
  frame=requestAnimationFrame(tick);
