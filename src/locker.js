@@ -1,13 +1,7 @@
-import {mountCharacterPreview} from './characters.js';
+import {mountCharacterPreview,getSkinThumbnail,generateSkinThumbnail} from './characters.js';
 import './locker.css';
 
-const categories=[
- {id:'skin',name:'SKIN',title:'SKIN',icon:'◉',items:['Recruit','Sky Scout','Night Runner','Blue Phantom','Storm Ranger','Solar Scout','Frost Agent','Neon Striker','Shadow Guard','Cloud Walker','Aurora','Sky Sentinel']},
- {id:'backpack',name:'BACKPACK',title:'BACKPACK',icon:'▣',items:['None','Field Pack','Jetpack','Signal Pack','Scout Bag','Energy Core','Mini Drone','Star Pack','Travel Kit']},
- {id:'axe',name:'AXE',title:'AXE',icon:'⚒',items:['Standard Axe','Neon Cutter','Storm Blade','Crystal Pick','Skybreaker','Solar Hammer','Frost Edge','Pulse Pick']},
- {id:'parachute',name:'PARACHUTE',title:'PARACHUTE',icon:'◇',items:['Standard Glider','Sky Wing','Cloud Rider','Night Glider','Storm Sail','Blue Comet','Solar Wings','Aero Glider']},
- {id:'skyfall',name:'SKYFALL',title:'SKYFALL',icon:'✦',items:['None','Default Trail','Blue Sparks','Stardust','Comet Trail','Aurora Fall','Electric Rain','Skyfire']}
-];
+const categories=[{id:'skin',name:'SKIN',title:'SKIN',icon:'◉',items:['Jaxon','Nova']}];
 const key='skyfront-locker-v1';
 let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch{}
 const equipped=Object.fromEntries(categories.map(c=>[c.id,c.items.includes(saved[c.id])?saved[c.id]:c.items[0]]));
@@ -23,6 +17,7 @@ const save=()=>{localStorage.setItem(key,JSON.stringify(equipped));window.dispat
 const favoriteKey=()=>active+':'+selected;
 const colors=['#217ad5','#763fd1','#1aabaf','#cc5c91','#5372cc','#2884a7','#b47737','#5d65b8','#178fa2','#7957b4','#257ab7','#af4b84'];
 const cosmeticArt=(category,item,index=0)=>{
+ if(category==='skin'&&getSkinThumbnail(item))return `<img class="sf-model-thumbnail" src="${getSkinThumbnail(item)}" alt="${esc(item)} 3D model">`;
  const hue=(index*39+category.length*17)%360;
  const palette=['#4ad8ff','#8c79ff','#ff6caa','#f7c35b','#5ef3c4'];
  const a=palette[index%palette.length],b=palette[(index+2)%palette.length];
@@ -86,6 +81,7 @@ function render(){
  disposeCharacterPreview?.();disposeCharacterPreview=null;
  const shouldAnimate=animateView;animateView=false;
  const root=document.getElementById('locker-root');if(!root)return;
+ for(const name of categories[0].items)generateSkinThumbnail(name).catch(()=>{});
  const c=cat(),isEmotes=section==='emotes',overview=view==='overview'&&!isEmotes;
  const filtered=c.items.map((item,index)=>({item,index})).filter(x=>x.item.toLowerCase().includes(search.toLowerCase())&&(!favoritesOnly||isFavorite(active,x.item))&&(!equippedOnly||equipped[active]===x.item));
  if(sort==='favorites')filtered.sort((a,b)=>Number(isFavorite(active,b.item))-Number(isFavorite(active,a.item))||a.index-b.index);
@@ -130,3 +126,15 @@ function render(){
 }
 export function mountLocker(){animateView=true;section='you';view='overview';render()}
 export function unmountLocker(){disposeCharacterPreview?.();disposeCharacterPreview=null}
+
+window.addEventListener('skyfront:skin-thumbnail',event=>{
+ const {name,url}=event.detail||{};
+ if(!name||!url)return;
+ document.querySelectorAll('#locker-root .sf-cosmetic[data-item],#locker-root .sf-loadout-card').forEach(card=>{
+  const match=card.dataset.item===name||card.querySelector('small')?.textContent===name;
+  if(!match)return;
+  const art=card.querySelector('.sf-cosmetic-art,.sf-loadout-icon');
+  if(art)art.innerHTML='<img class="sf-model-thumbnail" src="'+url+'" alt="'+name+' 3D model">';
+ });
+ window.dispatchEvent(new CustomEvent('skyfront:skin-art-updated',{detail:{name,url}}));
+});
