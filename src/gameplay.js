@@ -97,6 +97,7 @@ let yaw=0,pitch=0;
  const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const keydown=e=>{
   if(e.code==='Escape'){
+   if(inventory.isOpen){e.preventDefault();inventory.close();return}
    resetInput();
    if(!locked&&!e.defaultPrevented&&!document.querySelector('.sf-account-layer.open')){e.preventDefault();document.dispatchEvent(new Event('sf:open-game-menu'))}
    // When pointer-locked, Escape unlocks it; lockchange opens the menu.
