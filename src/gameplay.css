@@ -15,3 +15,9 @@ body.sf-gameplay-active{overflow:hidden}
 .sf-spawn-status span{font-size:12px;font-weight:900;color:#ffe17a;letter-spacing:.15em}
 .sf-spawn-status small{font-size:10px;color:#c3d9f3}
 @media(max-width:700px){.sf-spawn-status{top:70px;padding:8px 14px}.sf-spawn-status strong{font-size:14px}}
+
+.sf-bus-banner{position:absolute;top:110px;left:50%;transform:translateX(-50%);padding:14px 24px;border:1px solid #7bdfffaa;border-radius:14px;background:linear-gradient(135deg,#123f83ed,#1c2c68ed);color:#fff;box-shadow:0 8px 35px #091e4980;text-align:center;min-width:260px;animation:sfBusEnter .35s ease-out}
+.sf-bus-banner[hidden]{display:none!important}
+.sf-bus-banner strong{display:block;font-size:20px;font-weight:950;letter-spacing:.07em}
+.sf-bus-banner span{display:block;margin-top:6px;font-size:11px;color:#cdeaff}
+@keyframes sfBusEnter{from{opacity:0;transform:translate(-50%,-16px)}to{opacity:1;transform:translate(-50%,0)}}
