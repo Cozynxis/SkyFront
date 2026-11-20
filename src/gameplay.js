@@ -139,6 +139,7 @@ let yaw=0,pitch=0;
    // When pointer-locked, Escape unlocks it; lockchange opens the menu.
    return;
   }
+  if(phase==='dropping'&&(e.code==='KeyW'||e.code==='KeyS'||e.code==='KeyA'||e.code==='KeyD')){keys.add(e.code);e.preventDefault();return}
   if(phase!=='waiting'&&phase!=='landed')return;
   if(movementCodes.includes(e.code)&&!inventory.isOpen&&!document.querySelector('.sf-account-layer.open')){keys.add(e.code);e.preventDefault()}
  };
@@ -175,19 +176,22 @@ let yaw=0,pitch=0;
    const progress=Math.min(1,phaseClock/29);
    bus.position.lerpVectors(flightStart,flightEnd,progress);
    bus.position.y=155+Math.sin(phaseClock*.8)*1.6;
+   position.x=bus.position.x;position.z=bus.position.z;
    busAsset.update(phaseClock);
    const behind=new THREE.Vector3(Math.sin(bus.rotation.y)*-23,12,Math.cos(bus.rotation.y)*-23);
    camera.position.copy(bus.position).add(behind);
    camera.lookAt(bus.position.x,bus.position.y+3,bus.position.z);
    if(progress>=1)jumpFromBus();
   }else if(phase==='dropping'){
-   const glide=keys.has('KeyW')?30:keys.has('KeyS')?-14:0;
-   skydiver.position.x+=Math.sin(flightAngle+Math.PI)*glide*dt;
-   skydiver.position.z+=Math.cos(flightAngle+Math.PI)*glide*dt;
+   const glideForward=(Number(keys.has('KeyW'))-Number(keys.has('KeyS')))*24;
+   const glideSide=(Number(keys.has('KeyD'))-Number(keys.has('KeyA')))*24;
+   skydiver.position.x+=(Math.sin(flightAngle+Math.PI)*glideForward+Math.cos(flightAngle+Math.PI)*glideSide)*dt;
+   skydiver.position.z+=(Math.cos(flightAngle+Math.PI)*glideForward-Math.sin(flightAngle+Math.PI)*glideSide)*dt;
    skydiver.position.x=THREE.MathUtils.clamp(skydiver.position.x,-735,735);
    skydiver.position.z=THREE.MathUtils.clamp(skydiver.position.z,-735,735);
    dropVelocity=Math.min(24,dropVelocity+13*dt);
    skydiver.position.y=Math.max(0,skydiver.position.y-dropVelocity*dt);
+   position.x=skydiver.position.x;position.z=skydiver.position.z;
    camera.position.lerp(new THREE.Vector3(skydiver.position.x+14,skydiver.position.y+9,skydiver.position.z+20),1-Math.exp(-3*dt));
    camera.lookAt(skydiver.position.x,skydiver.position.y+2,skydiver.position.z);
    if(skydiver.position.y<=0)land();
