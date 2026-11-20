@@ -5,3 +5,25 @@
 .sf-drawer-links button[hidden]{display:none!important}
 .sf-account-layer.sf-gameplay-menu .sf-drawer-logout{margin-top:auto;background:#b62b4c25}
 .sf-account-layer.sf-gameplay-menu .sf-drawer-profile{padding:20px 0}
+
+/* Leave Match confirmation — anchored directly above the drawer's Leave button. */
+.sf-leave-wrap{position:relative;margin-top:auto}
+.sf-leave-wrap .sf-drawer-logout{margin-top:0}
+.sf-drawer-admin:not([hidden])+.sf-leave-wrap{margin-top:12px}
+.sf-leave-confirm[hidden]{display:none!important}
+.sf-leave-confirm{
+ position:absolute;bottom:calc(100% + 12px);left:0;right:0;z-index:3;
+ padding:17px;background:linear-gradient(150deg,#29426d,#172745);
+ border:1px solid #a6b9d56e;border-radius:12px;
+ box-shadow:0 12px 32px #0007;
+ color:#fff;animation:sfLeavePop .16s cubic-bezier(.2,.9,.25,1) both;
+}
+.sf-leave-confirm:after{content:'';position:absolute;bottom:-7px;left:50%;width:12px;height:12px;transform:translateX(-50%) rotate(45deg);background:#172745;border-right:1px solid #a6b9d56e;border-bottom:1px solid #a6b9d56e}
+.sf-leave-confirm strong{font:900 23px 'Barlow Condensed',Impact,sans-serif;letter-spacing:.025em}
+.sf-leave-confirm p{margin:7px 0 15px;color:#c1d2ee;font-size:12px;line-height:1.5}
+.sf-leave-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.sf-leave-actions button{border-radius:8px;padding:12px 8px;color:#fff;font-size:12px;font-weight:900;cursor:pointer;transition:filter .15s,transform .15s}
+.sf-leave-actions button:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.sf-leave-actions [data-leave-cancel]{background:#56647d;border:1px solid #9aabc4}
+.sf-leave-actions [data-leave-yes]{background:#d23b49;border:1px solid #ff8390}
+@keyframes sfLeavePop{from{opacity:0;transform:translateY(7px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
