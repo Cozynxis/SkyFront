@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 // Original SKYFRONT stylized scenery: lightweight procedural meshes and textures.
 export function buildSpawnScenery(scene){
@@ -35,19 +36,53 @@ export function buildSpawnScenery(scene){
  const island=add(new THREE.CircleGeometry(71.5,80),grass,0,.065,0);island.rotation.x=-Math.PI/2;
  const runway=box(0,.085,-10,13,.09,63,concrete);
  for(let i=0;i<8;i++)box(0,.14,-35+i*7,.45,.015,3,mat('#f5e9bb'));
- for(let i=0;i<24;i++){
-  const a=i*2.399,r=42+(i%4)*5,x=Math.cos(a)*r,z=Math.sin(a)*r;
-  cylinder(x,2.1,z,.44,4.2,wood,8);
-  cylinder(x,5.1,z,2.4,2.8,leaves[i%3],7);
-  const top=add(new THREE.ConeGeometry(2.8,3.8,7),leaves[(i+1)%3],x,7,z);top.rotation.y=i*.5;
- }
- // Original detailed modular hangars with doors, roofs and windows.
- for(const [x,z,w,d,h,tint] of [[0,-26,19,11,6,'#6c91af'],[-24,-16,12,14,5,'#c29d74'],[24,-20,13,11,7,'#789bb6']]){
-  const wall=mat(tint);box(x,h/2,z,w,h,d,wall);
-  box(x,h+.38,z,w+1,.75,d+1,metal);
-  box(x,h*.36,z+d/2+.035,w*.56,h*.72,.14,mat('#233e56'));
-  for(let i=0;i<4;i++)box(x-w*.35+i*w*.23,h*.76,z+d/2+.13,w*.12,.55,.13,mat('#8cd1eb',{emissive:'#2a657c',emissiveIntensity:.2}));
-  for(const side of [-1,1])box(x+side*(w/2+.15),h*.53,z,.3,h*.9,d,metal);
+ // Imported environment assets are loaded from public/models/spawn-island/.
+ const imported=[];
+ let disposed=false;
+ const loader=new GLTFLoader();
+ const models=[
+  {file:'low-poly_tree.glb',count:24,min:31,max:60,scale:4.2},
+  {file:'stylized_bush.glb',count:35,min:21,max:63,scale:2.1},
+  {file:'small_grass_low_poly.glb',count:90,min:17,max:61,scale:1.35},
+  {file:'low_poly_rock_set.glb',count:19,min:34,max:67,scale:1.6},
+  {file:'small_modern_garage.glb',spots:[[-1,-27,0],[24,-20,-.25],[-24,-16,.22]],scale:12}
+ ];
+ const hash=(n)=>{let x=(n*1664525+1013904223)>>>0;return x/4294967296};
+ const makePositions=(def)=>{
+  if(def.spots)return def.spots.map(([x,z,r])=>({x,z,rot:r}));
+  const positions=[];
+  for(let i=0;i<def.count;i++){
+   const angle=i*2.399963+hash(i+def.count)*.42;
+   const radius=def.min+(def.max-def.min)*Math.sqrt(hash(i*19+def.count));
+   const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
+   // Leave the central road, landing zone and waiting area clear.
+   if(Math.abs(x)<10&&z>-46&&z<30)continue;
+   positions.push({x,z,rot:hash(i*7+def.count)*Math.PI*2});
+  }
+  return positions;
+ };
+ for(const def of models){
+  loader.load('/models/spawn-island/'+def.file,gltf=>{
+   if(disposed){gltf.scene.traverse(o=>{if(o.isMesh)o.geometry?.dispose()});return}
+   const source=gltf.scene;
+   source.updateMatrixWorld(true);
+   const bounds=new THREE.Box3().setFromObject(source);
+   const size=bounds.getSize(new THREE.Vector3());
+   if(size.lengthSq()===0)return;
+   // Normalize every asset to a sensible world-space height while preserving proportions.
+   const factor=def.scale/Math.max(size.y,.001);
+   const placements=makePositions(def);
+   for(let i=0;i<placements.length;i++){
+    const p=placements[i],clone=source.clone(true);
+    clone.scale.setScalar(factor*(def.spots?1:.8+hash(i*17+def.count)*.45));
+    clone.rotation.y=p.rot;
+    clone.updateMatrixWorld(true);
+    const bb=new THREE.Box3().setFromObject(clone);
+    const center=bb.getCenter(new THREE.Vector3());
+    clone.position.set(p.x-center.x,.09-bb.min.y,p.z-center.z);
+    scene.add(clone);imported.push(clone);
+   }
+  },undefined,()=>{console.warn('Spawn Island model missing:',def.file)});
  }
  // Textured shipping containers, including ribs and corner locks.
  const containerColors=['#cf7850','#3b89b2','#d3b64f','#5a9b88'];
@@ -67,12 +102,6 @@ export function buildSpawnScenery(scene){
   box(x,.8,z,1.6,1.6,1.6,wood);
   box(x,.8,z+.83,1.5,.1,.08,metal);
  }
- // Low-poly cliffs and shoreline rocks.
- for(let i=0;i<26;i++){
-  const a=i*2.399,r=64+(i%3)*2.1;
-  const rock=add(new THREE.DodecahedronGeometry(1.3+(i%4)*.55,0),i%3?sand:mat('#84938a'),Math.cos(a)*r,.3,Math.sin(a)*r);
-  rock.scale.y=.5;rock.rotation.y=a;
- }
  // Directional signs and tall lamps.
  for(const [x,z] of [[-12,14],[14,14],[-15,-25],[18,-29]]){
   cylinder(x,2.4,z,.13,4.8,metal,8);
@@ -82,5 +111,5 @@ export function buildSpawnScenery(scene){
  const label=document.createElement('canvas');label.width=512;label.height=128;const ctx=label.getContext('2d');ctx.fillStyle='#194f83';ctx.fillRect(0,0,512,128);ctx.fillStyle='#fff';ctx.font='bold 53px sans-serif';ctx.textAlign='center';ctx.fillText('SPAWN ISLAND',256,80);
  const signTexture=new THREE.CanvasTexture(label);signTexture.colorSpace=THREE.SRGBColorSpace;
  add(new THREE.PlaneGeometry(4.7,1.2),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}),-13,2.2,13.13);
- return ()=>{for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete,metal,wood,sand,...leaves]){m.map?.dispose();m.dispose()}signTexture.dispose()};
+ return ()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete,metal,wood,sand,...leaves]){m.map?.dispose();m.dispose()}signTexture.dispose()};
 }
