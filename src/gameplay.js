@@ -96,7 +96,7 @@ let yaw=0,pitch=0;
  const keydown=e=>{
   if(e.code==='Escape'){
    resetInput();
-   if(!locked){e.preventDefault();document.dispatchEvent(new Event('sf:open-game-menu'))}
+   if(!locked&&!document.querySelector('.sf-account-layer.open')){e.preventDefault();document.dispatchEvent(new Event('sf:open-game-menu'))}
    // When pointer-locked, Escape unlocks it; lockchange opens the menu.
    return;
   }
