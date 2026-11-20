@@ -57,22 +57,42 @@ export function mountGameHud(parent,{position,worldRadius=72}={}){
  slots.forEach((slot,i)=>slot.addEventListener('click',()=>choose(i)));
  function drawMap(){
   if(!ctx)return;
-  const size=240,c=size/2,scale=1.5;
+  const size=240,c=120,scale=1.57;
   ctx.clearRect(0,0,size,size);
-  ctx.fillStyle='#17638e';ctx.fillRect(0,0,size,size);
+  const water=ctx.createLinearGradient(0,0,240,240);
+  water.addColorStop(0,'#144e86');water.addColorStop(1,'#268cb6');
+  ctx.fillStyle=water;ctx.fillRect(0,0,240,240);
   ctx.save();ctx.translate(c,c);
-  ctx.fillStyle='#d5c18b';ctx.beginPath();ctx.arc(0,0,112,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#74b66d';ctx.beginPath();ctx.arc(0,0,106,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#6aaa63';for(let i=0;i<18;i++){const a=i*2.399,r=45+(i%4)*12;ctx.beginPath();ctx.arc(Math.cos(a)*r,Math.sin(a)*r,7+(i%3)*2,0,Math.PI*2);ctx.fill()}
-  ctx.fillStyle='#899da9';ctx.fillRect(-13,-85,26,140);
-  ctx.fillStyle='#e7e0b4';for(let z=-75;z<50;z+=20)ctx.fillRect(-1,z,2,9);
-  ctx.fillStyle='#647d96';for(const [x,z,w,h] of [[0,-36,30,20],[-39,-24,19,23],[39,-30,22,20]])ctx.fillRect(x-w/2,z-h/2,w,h);
-  ctx.fillStyle='#c58459';for(let i=0;i<10;i++)ctx.fillRect(-55+(i%5)*18,-65+Math.floor(i/5)*13,11,6);
+  ctx.fillStyle='#c7b88b';ctx.beginPath();ctx.arc(0,0,115,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#67aa66';ctx.beginPath();ctx.arc(0,0,109,0,Math.PI*2);ctx.fill();
+  // Updated minimap uses the same runway, garage and foliage coordinates as Spawn Island.
+  ctx.fillStyle='#8a999e';ctx.fillRect(-10,-65,20,100);
+  ctx.fillStyle='#d6d4bb';for(let z=-59;z<30;z+=18)ctx.fillRect(-1.2,z,2.4,9);
+  ctx.fillStyle='#aeb9ba';ctx.beginPath();ctx.arc(0,17,19,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#e4d7a4';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,17,16,0,Math.PI*2);ctx.stroke();
+  const garageLocations=[[0,-48],[-37,-12],[37,-12]];
+  for(const [x,z] of garageLocations){
+   ctx.save();ctx.translate(x*scale,z*scale);ctx.fillStyle='#405b75';ctx.fillRect(-10,-7,20,14);
+   ctx.fillStyle='#9fb3bf';ctx.fillRect(-8,-5,16,10);ctx.restore();
+  }
+  const hash=n=>((n*1664525+1013904223)>>>0)/4294967296;
+  for(const [count,min,max,r,color] of [[24,31,60,4,'#2e774b'],[35,21,63,2.2,'#458b51'],[19,34,67,2.6,'#8e9b87']]){
+   ctx.fillStyle=color;
+   for(let i=0;i<count;i++){
+    const angle=i*2.399963+hash(i+count)*.42;
+    const radius=min+(max-min)*Math.sqrt(hash(i*19+count));
+    const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
+    if(Math.abs(x)<15&&z>-53&&z<35)continue;
+    if(z<0&&Math.abs(x)>16&&Math.abs(x)<48&&z>-43)continue;
+    if(Math.abs(x)<13&&z<-39)continue;
+    ctx.beginPath();ctx.arc(x*scale,z*scale,r,0,Math.PI*2);ctx.fill();
+   }
+  }
   ctx.restore();
   const px=c+(position?.x||0)*scale,pz=c+(position?.z||0)*scale;
-  ctx.beginPath();ctx.arc(px,pz,10,0,Math.PI*2);ctx.fillStyle='#081e3d';ctx.fill();
+  ctx.beginPath();ctx.arc(px,pz,9,0,Math.PI*2);ctx.fillStyle='#102a47';ctx.fill();
   ctx.beginPath();ctx.arc(px,pz,6,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-  ctx.beginPath();ctx.arc(px,pz,3.5,0,Math.PI*2);ctx.fillStyle='#31d7ff';ctx.fill();
+  ctx.beginPath();ctx.arc(px,pz,3.5,0,Math.PI*2);ctx.fillStyle='#35d5ff';ctx.fill();
  }
  const keydown=e=>{if(e.repeat||e.altKey||e.ctrlKey||e.metaKey)return;const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag))return;if(/^Digit[1-6]$/.test(e.code)){choose(Number(e.code.slice(-1))-1)}};
  window.addEventListener('keydown',keydown);
