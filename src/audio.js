@@ -26,6 +26,7 @@ function effect(key){
   audio.volume = original.volume;
   audio.play().catch(()=>{});
 }
+export function playReadySound(){effect('play')}
 export function installAudio(){
   document.addEventListener('pointerdown',startMusic,{passive:true});
   document.addEventListener('keydown',startMusic);
