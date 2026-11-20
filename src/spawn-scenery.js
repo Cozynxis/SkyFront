@@ -38,6 +38,8 @@ export function buildSpawnScenery(scene){
  for(let i=0;i<8;i++)box(0,.14,-35+i*7,.45,.015,3,mat('#f5e9bb'));
  // Imported environment assets are loaded from public/models/spawn-island/.
  const imported=[];
+ const colliders=[];
+ const grassMaterial=mat('#5ea951',{side:THREE.DoubleSide});
  let disposed=false;
  const loader=new GLTFLoader();
  const assetUrl=file=>(import.meta.env.BASE_URL||'/')+'models/spawn-island/'+file;
@@ -127,10 +129,23 @@ export function buildSpawnScenery(scene){
     clone.position.x+=p.x-center.x;
     clone.position.z+=p.z-center.z;
     clone.position.y+=.08-placed.min.y;
+    // Some free grass GLBs reference missing textures. Replace only grass
+    // materials with a reliable double-sided stylized green material.
+    if(def.kind==='grass')clone.traverse(node=>{if(node.isMesh)node.material=grassMaterial});
     scene.add(clone);
     imported.push(clone);
+    if(!['grass','bush'].includes(def.kind)){
+     const bounds=new THREE.Box3().setFromObject(clone);
+     const center=bounds.getCenter(new THREE.Vector3());
+     const extents=bounds.getSize(new THREE.Vector3());
+     if(def.kind==='tree')colliders.push({type:'circle',x:center.x,z:center.z,radius:Math.max(.55,Math.min(1.65,extents.x*.13)),height:extents.y});
+     else if(def.kind==='rock')colliders.push({type:'circle',x:center.x,z:center.z,radius:Math.max(.6,Math.min(extents.x,extents.z)*.42),height:extents.y});
+     else colliders.push({type:'box',x:center.x,z:center.z,halfX:extents.x*.46,halfZ:extents.z*.46,height:extents.y});
+    }
    }
   },undefined,error=>console.error('[SKYFRONT] GLB failed:',assetUrl(def.file),error));
  }
- return ()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete]){m.map?.dispose();m.dispose()}};
+ const dispose=()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete]){m.map?.dispose();m.dispose()}grassMaterial.dispose()};
+ dispose.colliders=colliders;
+ return dispose;
 }
