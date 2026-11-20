@@ -32,11 +32,53 @@ export async function createSkyfrontCharacter(name='Jaxon'){
  model.position.y-=scaled.min.y;
  return model;
 }
+// Fallback for static, unrigged FBX meshes: bend horizontal T-pose arms downward.
+// Work in normalized model space, so the same correction applies to Jaxon and Nova.
+function relaxStaticTPose(model){
+ model.updateMatrixWorld(true);
+ const box=new THREE.Box3().setFromObject(model),height=box.max.y-box.min.y;
+ if(height<=0)return;
+ const center=box.getCenter(new THREE.Vector3());
+ const inverseRoot=new THREE.Matrix4().copy(model.matrixWorld).invert();
+ const worldPoint=new THREE.Vector3(),localPoint=new THREE.Vector3(),out=new THREE.Vector3();
+ let changed=false;
+ model.traverse(mesh=>{
+  if(!mesh.isMesh||mesh.isSkinnedMesh||!mesh.geometry?.attributes?.position)return;
+  const geo=mesh.geometry.clone();
+  mesh.geometry=geo;
+  const position=geo.attributes.position;
+  const toRoot=new THREE.Matrix4().multiplyMatrices(inverseRoot,mesh.matrixWorld);
+  const fromRoot=new THREE.Matrix4().copy(toRoot).invert();
+  let edits=0;
+  for(let i=0;i<position.count;i++){
+   worldPoint.fromBufferAttribute(position,i).applyMatrix4(toRoot);
+   const x=(worldPoint.x-center.x)/height;
+   const y=(worldPoint.y-box.min.y)/height;
+   const absX=Math.abs(x);
+   // Restrict deformation to upper-body side extremities, excluding torso/legs/head.
+   if(absX<.17||y<.48||y>.85)continue;
+   const sign=Math.sign(x);
+   const shoulderX=sign*.165,shoulderY=.74;
+   const dx=x-shoulderX,dy=y-shoulderY;
+   if(sign*dx<0)continue;
+   const weight=THREE.MathUtils.smoothstep(absX,.17,.28)*THREE.MathUtils.smoothstep(y,.48,.59);
+   if(weight<=0)continue;
+   const angle=-sign*1.12*weight;
+   const rx=dx*Math.cos(angle)-dy*Math.sin(angle);
+   const ry=dx*Math.sin(angle)+dy*Math.cos(angle);
+   out.set(center.x+(shoulderX+rx)*height,box.min.y+(shoulderY+ry)*height,worldPoint.z).applyMatrix4(fromRoot);
+   position.setXYZ(i,out.x,out.y,out.z);edits++;
+  }
+  if(edits){position.needsUpdate=true;geo.computeVertexNormals();geo.computeBoundingSphere();geo.computeBoundingBox();edits&& (changed=true);}
+ });
+ return changed;
+}
 // Pose rigged FBX characters without requiring an external animation file.
 // If a model has no shoulder/arm bones, it remains in its imported bind pose.
 function makeIdleRig(model){
  const bones=[];
  model.traverse(node=>{if(node.isBone)bones.push(node)});
+ if(!bones.length)relaxStaticTPose(model);
  const find=(side,part)=>{
   const patterns={
    upper:/upperarm|uparm|arm[_ .-]?(l|r)|shoulder/i,
@@ -81,7 +123,7 @@ export function mountCharacterPreview(host,name='Jaxon',options={}){
  const lobby=Boolean(options.lobby),interactive=!lobby;
  const scene=new THREE.Scene();
  const camera=new THREE.PerspectiveCamera(35,1,.1,100);
- camera.position.set(0,1.65,lobby?6.1:7.0);camera.lookAt(0,1.6,0);
+ camera.position.set(0,1.65,lobby?4.8:7.0);camera.lookAt(0,1.6,0);
  const label=document.createElement('div');label.className='sf-model-loading';label.textContent='LOADING '+name.toUpperCase()+'…';host.append(label);
  try{renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'low-power'});}
  catch(e){label.textContent='3D preview unavailable';return()=>label.remove()}
