@@ -68,7 +68,7 @@ async function hydrateAttachments(){
   await renderAttachments(node,files);
  }
 }
-function supportToast(ticketId,subject){
+function supportToast(ticketId,subject,kind='reply'){
  if(!toast){toast=document.createElement('div');toast.className='sf-social-toast sf-support-toast';toast.hidden=true;document.body.append(toast)}
  toast.innerHTML='<div class="sf-social-toast-head"><span class="sf-social-toast-symbol">✉</span><div class="sf-social-toast-copy"><small>SKYFRONT • SUPPORT REPLY</small><strong>'+esc(subject)+'</strong><span>Support has replied to your ticket</span></div><button type="button" data-dismiss aria-label="Dismiss">×</button></div><div class="sf-social-toast-actions"><button type="button" data-open-ticket>VIEW TICKET</button></div><div class="sf-social-toast-progress"></div>';
  toast.hidden=false;requestAnimationFrame(()=>toast.classList.add('visible'));
@@ -86,7 +86,7 @@ async function pollNotifications(){
  for(const n of data||[]){
   if(seenNotifications.has(n.id))continue;
   seenNotifications.add(n.id);
-  supportToast(n.ticket_id,n.sf_support_tickets?.subject||'Your support ticket');
+  supportToast(n.ticket_id,n.sf_support_tickets?.subject||'Your support ticket',n.kind);
   await supabase.from('sf_support_notifications').update({read_at:new Date().toISOString()}).eq('id',n.id);
  }
 }
@@ -175,7 +175,7 @@ function render(){
    try{files=Array.from(form.elements.attachments?.files||[]);checkFiles(files)}catch(error){note.textContent=error.message;submit.disabled=false;busy=false;return}
    const result=await supabase.from('sf_support_tickets').insert(payload).select('id').single();
    if(result.error){note.textContent=result.error.message;submit.disabled=false;busy=false;return}
-   if(files.length){try{const attachments=await uploadFiles(files,user.id,result.data.id);const saved=await supabase.from('sf_support_tickets').update({attachments}).eq('id',result.data.id);if(saved.error)throw saved.error}catch(error){note.textContent='Ticket created, but attachments failed: '+error.message;submit.disabled=false;busy=false;return}}
+   if(files.length){try{const attachments=await uploadFiles(files,user.id,result.data.id);const saved=await supabase.from('sf_support_messages').insert({ticket_id:result.data.id,sender_id:user.id,body:'Attached files',attachments});if(saved.error)throw saved.error}catch(error){note.textContent='Ticket created, but attachments failed: '+error.message;submit.disabled=false;busy=false;return}}
    selectedTicket=result.data.id;view='detail';busy=false;await load({force:true});
   };
  }else if(view==='tickets'){
