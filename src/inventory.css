@@ -46,7 +46,21 @@
 .sf-inventory-panel footer [data-drop]{padding:7px 12px;background:#314c7b;color:#fff;border:1px solid #8cafe5;border-radius:3px;font-weight:900;cursor:pointer}
 .sf-inventory-panel footer [data-drop]:disabled{opacity:.35;cursor:not-allowed}
 .sf-inventory-drop-note{font-size:10px!important;color:#a7bcdd!important;margin-right:auto}
-.sf-inventory-inspect{position:absolute;inset:18% 27%;z-index:3;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px;background:#091b43f5;border:1px solid #c0e3ff9c;border-radius:8px;box-shadow:0 15px 70px #000b}
-.sf-inventory-inspect>small{letter-spacing:.14em;color:#8bc6ff}.sf-inspect-icon{font-size:95px;margin:24px}.sf-inspect-name{font-size:32px}.sf-inspect-info{width:100%;display:grid;gap:8px}
-.sf-inspect-info div{display:flex;justify-content:space-between;padding:11px;background:#ffffff14;border:1px solid #ffffff26;font-size:12px}.sf-inspect-info span{color:#b7d4ff}.sf-inventory-inspect>span{font-size:11px;color:#a6c8e9;margin-top:15px}
-@media(max-width:800px){.sf-inventory-panel{inset:2%}.sf-inventory-body{grid-template-columns:1fr;gap:8px;overflow:auto}.sf-inventory-detail{width:100%;margin:0}.sf-inventory-right{overflow:visible}.sf-inventory-section{padding-bottom:12px}.sf-inventory-grid{gap:3px}.sf-inventory-cell{min-height:52px}.sf-inventory-item-icon{font-size:21px}.sf-inventory-cell strong{font-size:7px}.sf-inventory-panel footer{justify-content:center;gap:6px}.sf-inventory-inspect{inset:15% 7%}}
+@media(max-width:800px){.sf-inventory-panel{inset:2%}.sf-inventory-body{grid-template-columns:1fr;gap:8px;overflow:auto}.sf-inventory-detail{width:100%;margin:0}.sf-inventory-right{overflow:visible}.sf-inventory-section{padding-bottom:12px}.sf-inventory-grid{gap:3px}.sf-inventory-cell{min-height:52px}.sf-inventory-item-icon{font-size:21px}.sf-inventory-cell strong{font-size:7px}.sf-inventory-panel footer{justify-content:center;gap:6px}}
+
+/* Streamlined equipment view: item details left, equipment on the right. */
+.sf-inventory-panel{inset:5% 3% 5%;max-width:1480px;margin:auto}
+.sf-inventory-body{grid-template-columns:minmax(260px,.82fr) minmax(390px,1.18fr);gap:clamp(20px,5vw,90px);align-items:start;padding-top:clamp(18px,5vh,60px)}
+.sf-inventory-detail{width:min(420px,100%);margin-top:0;border-radius:7px;box-shadow:0 14px 36px #0005}
+.sf-inventory-right{justify-content:flex-start;align-self:start;min-height:0;padding:0;background:#0b1633d6;border-radius:7px;box-shadow:0 14px 36px #0005}
+.sf-inventory-equipment{margin:0;padding:0 14px 16px}
+.sf-inventory-section h3{margin:0 -14px 16px;padding:13px 16px;background:linear-gradient(90deg,#375f9d,#1d355e);font-size:13px;display:flex;align-items:center;justify-content:space-between}
+.sf-inventory-slot-count{font-size:10px;color:#bbd6ff;letter-spacing:.1em}
+.sf-inventory-grid{gap:7px}
+.sf-inventory-cell{border-radius:6px;aspect-ratio:1/1.15}
+.sf-inventory-cell.is-locked{cursor:default;border-color:#91a4c6;background:linear-gradient(145deg,#49607e,#263858)}
+.sf-inventory-cell.is-locked:hover{transform:none;filter:none}
+.sf-inventory-lock{position:absolute;top:3px;right:5px;font-size:12px}
+.sf-inventory-equipment p{margin-top:12px;letter-spacing:.05em}
+.sf-inventory-panel footer{border-radius:5px;gap:16px}
+@media(max-width:800px){.sf-inventory-panel{inset:2%}.sf-inventory-body{grid-template-columns:1fr;gap:10px;overflow:auto;padding-top:8px}.sf-inventory-detail{width:100%}.sf-inventory-right{overflow:visible}.sf-inventory-cell{min-height:52px}}
