@@ -10,7 +10,98 @@ const categories={
 };
 let overlay=null,view='home',selectedTicket=null,adminMode=false,records=[],messages=[],admin=false,refreshTimer=null,channel=null;
 let requestVersion=0,adminFilter='active',categoryFilter='all',searchTerm='',lastSignature='',busy=false;
-let embeddedHost=null;
+let embeddedHost=null,priorityFilter='all',notificationTimer=null,seenNotifications=new Set(),toast=null;
+const BUCKET='sf-support-attachments';
+const PRIORITIES=['low','normal','high','urgent'];
+const allowedTypes=new Set(['image/png','image/jpeg','image/webp','image/gif','application/pdf']);
+const safeFileName=name=>String(name||'attachment').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,90);
+const attachmentsInput='<label class="sf-support-file-label">ATTACH FILES <small>Images or PDF · max 5 MB each · up to 3 files</small><input type="file" name="attachments" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf" multiple></label>';
+function checkFiles(files){
+ if(files.length>3)throw Error('Maximum 3 attachments per message.');
+ for(const file of files)if(!allowedTypes.has(file.type)||file.size>5*1024*1024)throw Error('Only images or PDF files up to 5 MB are allowed.');
+}
+async function uploadFiles(files,userId,ticketId){
+ checkFiles(files);
+ const uploaded=[];
+ try{
+  for(const file of files){
+   const path=userId+'/'+ticketId+'/'+crypto.randomUUID()+'-'+safeFileName(file.name);
+   const result=await supabase.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:false});
+   if(result.error)throw result.error;
+   uploaded.push({path,name:file.name,type:file.type});
+  }
+  return uploaded;
+ }catch(error){
+  await Promise.all(uploaded.map(file=>supabase.storage.from(BUCKET).remove([file.path])));
+  throw error;
+ }
+}
+async function renderAttachments(host,files){
+ for(const file of Array.isArray(files)?files:[]){
+  if(!file.path||!file.name)continue;
+  const {data,error}=await supabase.storage.from(BUCKET).createSignedUrl(file.path,180);
+  if(error||!data?.signedUrl)continue;
+  const button=document.createElement('button');button.type='button';button.className='sf-support-attachment';
+  const image=String(file.type).startsWith('image/');
+  if(image){const img=document.createElement('img');img.src=data.signedUrl;img.alt=file.name;img.loading='lazy';button.append(img)}
+  else button.textContent='📄 '+file.name;
+  button.title='Open '+file.name;
+  button.onclick=()=>{if(image)showAttachment(data.signedUrl,file.name);else window.open(data.signedUrl,'_blank','noopener,noreferrer')};
+  host.append(button);
+ }
+}
+function showAttachment(url,name){
+ const viewer=document.createElement('div');viewer.className='sf-support-lightbox';
+ const img=document.createElement('img');img.src=url;img.alt=name;
+ const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Close image');
+ viewer.append(img,close);close.onclick=()=>viewer.remove();viewer.onclick=e=>{if(e.target===viewer)viewer.remove()};
+ document.body.append(viewer);
+}
+async function hydrateAttachments(){
+ if(!overlay||overlay.hidden)return;
+ const t=records.find(t=>t.id===selectedTicket);
+ if(!t)return;
+ const nodes=overlay.querySelectorAll('[data-attachment-source]');
+ for(const node of nodes){
+  const id=node.dataset.attachmentSource;
+  const files=id==='original'?t.attachments:messages.find(m=>m.id===id)?.attachments;
+  await renderAttachments(node,files);
+ }
+}
+function supportToast(ticketId,subject){
+ if(!toast){toast=document.createElement('div');toast.className='sf-social-toast sf-support-toast';toast.hidden=true;document.body.append(toast)}
+ toast.innerHTML='<div class="sf-social-toast-head"><span class="sf-social-toast-symbol">✉</span><div class="sf-social-toast-copy"><small>SKYFRONT • SUPPORT REPLY</small><strong>'+esc(subject)+'</strong><span>Support has replied to your ticket</span></div><button type="button" data-dismiss aria-label="Dismiss">×</button></div><div class="sf-social-toast-actions"><button type="button" data-open-ticket>VIEW TICKET</button></div><div class="sf-social-toast-progress"></div>';
+ toast.hidden=false;requestAnimationFrame(()=>toast.classList.add('visible'));
+ const sound=new Audio(import.meta.env.BASE_URL+'audio/Notification.mp3');sound.volume=.55;sound.play().catch(()=>{});
+ const dismiss=()=>{toast.classList.remove('visible');setTimeout(()=>{toast.hidden=true},220)};
+ toast.querySelector('[data-dismiss]').onclick=dismiss;
+ toast.querySelector('[data-open-ticket]').onclick=()=>{dismiss();void openSupportTicket(ticketId)};
+ setTimeout(dismiss,9500);
+}
+async function pollNotifications(){
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)return;
+ const {data,error}=await supabase.from('sf_support_notifications').select('id,ticket_id,created_at,sf_support_tickets(subject)').eq('user_id',user.id).is('read_at',null).order('created_at',{ascending:true}).limit(10);
+ if(error)return;
+ for(const n of data||[]){
+  if(seenNotifications.has(n.id))continue;
+  seenNotifications.add(n.id);
+  supportToast(n.ticket_id,n.sf_support_tickets?.subject||'Your support ticket');
+  await supabase.from('sf_support_notifications').update({read_at:new Date().toISOString()}).eq('id',n.id);
+ }
+}
+export function installSupportNotifications(){
+ if(notificationTimer)return;
+ void pollNotifications();
+ notificationTimer=setInterval(()=>{void pollNotifications()},12000);
+}
+export async function openSupportTicket(ticketId){
+ await open(false);
+ if(!overlay||overlay.hidden)return;
+ const t=records.find(item=>item.id===ticketId&&item.status!=='closed');
+ if(t){selectedTicket=t.id;view='detail';await load({force:true})}
+ else{view='tickets';await load({force:true})}
+}
 const date=v=>new Date(v).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
 function status(s){return ({open:'OPEN',in_progress:'IN PROGRESS',waiting:'WAITING FOR PLAYER',closed:'CLOSED'})[s]||s}
 function shell(){
@@ -60,6 +151,7 @@ async function load({force=false}={}){
  if(!force&&signature===lastSignature)return;
  lastSignature=signature;
  render();
+ if(view==='detail')void hydrateAttachments();
 }
 function renderError(message){const body=overlay?.querySelector('.sf-support-body');if(body)body.innerHTML='<div class="sf-support-notice">'+esc(message)+'</div>'}
 function button(label,action,extra=''){return '<button type="button" data-action="'+action+'" '+extra+'>'+label+'</button>'}
@@ -79,8 +171,11 @@ function render(){
    if(!user){note.textContent='Please sign in first.';submit.disabled=false;busy=false;return}
    const data=new FormData(form),details={};for(const [key] of c.fields)details[key]=String(data.get(key)||'').trim();
    const payload={user_id:user.id,username:String(user.user_metadata?.username||user.email?.split('@')[0]||'PLAYER').slice(0,60),category:view,subject:String(data.get('subject')).trim(),description:String(data.get('description')).trim(),details};
+   let files=[];
+   try{files=Array.from(form.elements.attachments?.files||[]);checkFiles(files)}catch(error){note.textContent=error.message;submit.disabled=false;busy=false;return}
    const result=await supabase.from('sf_support_tickets').insert(payload).select('id').single();
    if(result.error){note.textContent=result.error.message;submit.disabled=false;busy=false;return}
+   if(files.length){try{const attachments=await uploadFiles(files,user.id,result.data.id);const saved=await supabase.from('sf_support_tickets').update({attachments}).eq('id',result.data.id);if(saved.error)throw saved.error}catch(error){note.textContent='Ticket created, but attachments failed: '+error.message;submit.disabled=false;busy=false;return}}
    selectedTicket=result.data.id;view='detail';busy=false;await load({force:true});
   };
  }else if(view==='tickets'){
@@ -110,7 +205,7 @@ function render(){
 async function open(isAdmin,host=null){
  closeSupport();
  embeddedHost=host;
- adminMode=isAdmin;view=isAdmin?'admin-home':'home';selectedTicket=null;messages=[];searchTerm='';adminFilter='active';categoryFilter='all';lastSignature='';busy=false;shell();await load({force:true});
+ adminMode=isAdmin;view=isAdmin?'admin-home':'home';selectedTicket=null;messages=[];searchTerm='';adminFilter='active';categoryFilter='all';priorityFilter='all';lastSignature='';busy=false;shell();await load({force:true});
  refreshTimer=setInterval(()=>{if(!overlay?.hidden)void load()},12000);
  channel=supabase.channel('sf-support-'+(isAdmin?'admin':'player')).on('postgres_changes',{event:'*',schema:'public',table:'sf_support_tickets'},()=>{if(!overlay.hidden)void load()}).on('postgres_changes',{event:'*',schema:'public',table:'sf_support_messages'},()=>{if(!overlay.hidden)void load()}).subscribe();
 }
