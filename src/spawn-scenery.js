@@ -42,50 +42,95 @@ export function buildSpawnScenery(scene){
  const loader=new GLTFLoader();
  const assetUrl=file=>(import.meta.env.BASE_URL||'/')+'models/spawn-island/'+file;
  const models=[
-  {file:'low-poly_tree.glb',count:24,min:31,max:60,scale:4.2},
-  {file:'stylized_bush.glb',count:35,min:21,max:63,scale:2.1},
-  {file:'small_grass_low_poly.glb',count:90,min:17,max:61,scale:1.35},
-  {file:'low_poly_rock_set.glb',count:19,min:34,max:67,scale:1.6},
-  {file:'small_modern_garage.glb',spots:[[0,-48,0],[-37,-12,1.57],[37,-12,-1.57]],scale:12}
+  {file:'low-poly_tree.glb',count:19,height:10.5,spacing:12,kind:'tree'},
+  {file:'stylized_bush.glb',count:26,height:1.55,spacing:4.8,kind:'bush'},
+  {file:'small_grass_low_poly.glb',count:65,height:.45,spacing:2.1,kind:'grass'},
+  {file:'low_poly_rock_set.glb',count:16,height:1.8,spacing:5.5,kind:'rock'},
+  {file:'small_modern_garage.glb',height:9,kind:'garage',spots:[[0,-48,0],[-37,-12,1.57],[37,-12,-1.57]]}
  ];
- const hash=(n)=>{let x=(n*1664525+1013904223)>>>0;return x/4294967296};
- const makePositions=(def)=>{
-  if(def.spots)return def.spots.map(([x,z,r])=>({x,z,rot:r}));
-  const positions=[];
-  for(let i=0;i<def.count;i++){
-   const angle=i*2.399963+hash(i+def.count)*.42;
-   const radius=def.min+(def.max-def.min)*Math.sqrt(hash(i*19+def.count));
-   const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius;
-   // Leave the central road, landing zone and waiting area clear.
-   if(Math.abs(x)<15&&z>-53&&z<35)continue;
-   if(z<0&&Math.abs(x)>16&&Math.abs(x)<48&&z>-43)continue;
-   if(Math.abs(x)<13&&z<-39)continue;
-   positions.push({x,z,rot:hash(i*7+def.count)*Math.PI*2});
+ // Stable random distribution; keep large objects apart and clear the runway and garages.
+ let seed=52917;
+ const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ const occupied=[];
+ const garages=[[0,-48],[-37,-12],[37,-12]];
+ function validPosition(x,z,kind,spacing){
+  const radius=Math.hypot(x,z);
+  if(radius>65-spacing*.45||radius<18)return false;
+  if(Math.abs(x)<12&&z>-49&&z<35)return false;
+  if(Math.hypot(x,z-11)<19)return false;
+  if(garages.some(([gx,gz])=>Math.hypot(x-gx,z-gz)<15))return false;
+  for(const o of occupied){
+   // Grass can be sprinkled around scenery, but never inside larger models.
+   const required=kind==='grass'?(o.kind==='grass'?2.2:o.kind==='tree'?5.2:3.0)
+     :o.kind==='grass'?(kind==='tree'?5.2:3.0)
+     :Math.max(spacing,o.spacing,(kind==='tree'||o.kind==='tree')?10:0);
+   if(Math.hypot(x-o.x,z-o.z)<required)return false;
   }
-  return positions;
- };
+  return true;
+ }
+ function positionsFor(def){
+  if(def.spots)return def.spots.map(([x,z,rot])=>({x,z,rot}));
+  const result=[];
+  for(let tries=0;tries<def.count*130&&result.length<def.count;tries++){
+   const a=random()*Math.PI*2;
+   const r=Math.sqrt(18*18+random()*(65*65-18*18));
+   const x=Math.cos(a)*r,z=Math.sin(a)*r;
+   if(!validPosition(x,z,def.kind,def.spacing))continue;
+   occupied.push({x,z,kind:def.kind,spacing:def.spacing});
+   result.push({x,z,rot:random()*Math.PI*2});
+  }
+  return result;
+ }
+ // Calculate every position before async loading so load order cannot change spacing.
+ const placements=new Map(models.map(def=>[def.file,positionsFor(def)]));
+ function rockVariants(source){
+  // A rock-set GLB commonly contains multiple rock objects in one scene.
+  // Prefer separate top-level groups; otherwise extract its distinct mesh objects.
+  const groups=source.children.filter(child=>child.visible&&child.type!=='Bone');
+  if(groups.length>1)return groups;
+  const meshes=[];
+  source.traverse(node=>{if(node.isMesh&&node.visible)meshes.push(node)});
+  return meshes.length>1?meshes:[source];
+ }
+ function makeRock(source){
+  const variants=rockVariants(source);
+  const selected=variants[Math.floor(random()*variants.length)];
+  // Preserve world transform of a child when extracting it from the rock-set.
+  source.updateMatrixWorld(true);
+  const copy=selected.clone(true);
+  const group=new THREE.Group();
+  if(selected!==source){
+   const matrix=selected.matrixWorld.clone();
+   matrix.decompose(copy.position,copy.quaternion,copy.scale);
+  }
+  group.add(copy);
+  return group;
+ }
  for(const def of models){
   loader.load(assetUrl(def.file),gltf=>{
-   if(disposed){gltf.scene.traverse(o=>{if(o.isMesh)o.geometry?.dispose()});return}
+   if(disposed)return;
    const source=gltf.scene;
    source.updateMatrixWorld(true);
-   const bounds=new THREE.Box3().setFromObject(source);
-   const size=bounds.getSize(new THREE.Vector3());
-   if(size.lengthSq()===0)return;
-   // Normalize every asset to a sensible world-space height while preserving proportions.
-   const factor=def.scale/Math.max(size.y,.001);
-   const placements=makePositions(def);
-   for(let i=0;i<placements.length;i++){
-    const p=placements[i],clone=source.clone(true);
-    clone.scale.setScalar(factor*(def.spots?1:.8+hash(i*17+def.count)*.45));
-    clone.rotation.y=p.rot;
+   for(const p of placements.get(def.file)){
+    const clone=def.kind==='rock'?makeRock(source):source.clone(true);
     clone.updateMatrixWorld(true);
     const bb=new THREE.Box3().setFromObject(clone);
-    const center=bb.getCenter(new THREE.Vector3());
-    clone.position.set(p.x-center.x,.09-bb.min.y,p.z-center.z);
-    scene.add(clone);imported.push(clone);
+    const size=bb.getSize(new THREE.Vector3());
+    if(size.y<.0001||!Number.isFinite(size.y))continue;
+    const height=def.height*(def.spots?1:.83+random()*.35);
+    clone.scale.multiplyScalar(height/size.y);
+    clone.rotation.y+=p.rot;
+    clone.updateMatrixWorld(true);
+    const placed=new THREE.Box3().setFromObject(clone);
+    const center=placed.getCenter(new THREE.Vector3());
+    // Terrain is at y=0.065; position model's lowest point just above it.
+    clone.position.x+=p.x-center.x;
+    clone.position.z+=p.z-center.z;
+    clone.position.y+=.08-placed.min.y;
+    scene.add(clone);
+    imported.push(clone);
    }
-  },undefined,error=>{console.error('[SKYFRONT] GLB failed:',assetUrl(def.file),error)});
+  },undefined,error=>console.error('[SKYFRONT] GLB failed:',assetUrl(def.file),error));
  }
  return ()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete]){m.map?.dispose();m.dispose()}};
 }
