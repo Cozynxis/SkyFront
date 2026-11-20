@@ -35,7 +35,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
  const panel=ui.querySelector('.sf-inventory-panel'),backdrop=ui.querySelector('.sf-inventory-backdrop'),grid=ui.querySelector('.sf-inventory-grid'),detail=ui.querySelector('.sf-inventory-detail'),hint=ui.querySelector('.sf-pickup-hint'),inspect=ui.querySelector('.sf-inventory-inspect');
  const isPaused=()=>Boolean(document.querySelector('.sf-account-layer.open'));
  const isEditing=()=>['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
- function itemIcon(item){return ICONS[item?.kind]||'✦'}
+ function itemIcon(item){return item?(ICONS[item.kind]||'✦'):'+'}
  function statsHTML(item){return item?'<div><span>DAMAGE</span><b>'+escapeHTML(item.damage??'—')+'</b></div><div><span>FIRE RATE</span><b>'+escapeHTML(item.fireRate??'—')+'</b></div><div><span>MAGAZINE</span><b>'+escapeHTML(item.magazine??'—')+'</b></div>':''}
  function render(){
   grid.replaceChildren();
@@ -68,7 +68,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
   if(!found)return false;
   const free=slots.findIndex((s,i)=>i>0&&!s);
   if(free<0){hint.querySelector('strong').textContent='INVENTORY FULL';return false}
-  slots[free]={...found.item};scene.remove(found.mesh);found.mesh.clear();selected=free;render();hint.hidden=true;return true;
+  slots[free]={...found.item};scene.remove(found.mesh);selected=free;render();hint.hidden=true;return true;
  }
  function drop(){
   const item=slots[selected];if(!item||item.kind==='pickaxe')return;
@@ -100,6 +100,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
  render();
  return {
   get isOpen(){return opened},
+  close,
   update(t){
    let nearest=null;
    for(const p of pickups){if(!p.mesh.parent)continue;p.mesh.rotation.y+=t*.7;p.mesh.position.y=1.3+Math.sin(performance.now()*.003)*.14;if(Math.hypot(position.x-p.mesh.position.x,position.z-p.mesh.position.z)<3.2)nearest=p}
