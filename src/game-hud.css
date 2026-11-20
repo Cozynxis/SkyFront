@@ -54,3 +54,11 @@
 .sf-hud-inventory{bottom:22px}
 .sf-hud-slot-item{font-size:28px;line-height:1}
 .sf-hud-slot small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Sprint stamina: slim orange indicator beneath HP, fades when fully recovered. */
+.sf-hud-stamina{display:flex;align-items:center;gap:7px;height:11px;margin:2px 34px 0 1px;opacity:0;transform:translateY(-4px);transition:opacity .35s ease,transform .35s ease;pointer-events:none}
+.sf-hud-stamina.is-visible{opacity:1;transform:translateY(0)}
+.sf-hud-stamina-icon{width:23px;text-align:center;color:#ffb04d;font-size:12px;text-shadow:0 1px 3px #0009}
+.sf-hud-stamina-track{flex:1;height:7px;overflow:hidden;background:#1a2740b8;border:1px solid #583e28;border-radius:4px}
+.sf-hud-stamina-track i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#f17b26,#ffc35c);border-radius:3px;transition:width .1s linear}
+.sf-hud-stamina.is-exhausted .sf-hud-stamina-track i{background:linear-gradient(90deg,#b65a23,#e98a35)}
