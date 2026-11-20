@@ -49,7 +49,7 @@ export function mountInventory({root,scene,position,camera,renderer,onChange=()=
   slots.forEach((item,i)=>{
    const b=document.createElement('button');b.type='button';b.draggable=!!item&&i!==0;b.dataset.index=i;b.className='sf-inventory-cell'+(selected===i?' selected':'')+(item?' has-item':'')+(i===0?' is-locked':'');
    b.dataset.rarity=item?.rarity||'empty';
-   b.innerHTML='<span class="sf-inventory-number">'+(i+1)+'</span>'+(i===0?'<span class="sf-inventory-lock" aria-label="Locked">🔒</span>':'')<span class="sf-inventory-item-icon">'+(itemIcon(item)||'+')+'</span><strong>'+escapeHTML(item?.name||'EMPTY')+'</strong>';
+   b.innerHTML='<span class="sf-inventory-number">'+(i+1)+'</span>'+(i===0?'<span class="sf-inventory-lock" aria-label="Locked">🔒</span>':'')+'<span class="sf-inventory-item-icon">'+(itemIcon(item)||'+')+'</span><strong>'+escapeHTML(item?.name||'EMPTY')+'</strong>';
    b.onclick=()=>{if(swapFrom!==null&&swapFrom!==i&&swapFrom!==0&&i!==0){swap(swapFrom,i)}else{selected=i;swapFrom=i===0?null:i;render()}};
    b.ondragstart=e=>{if(i===0){e.preventDefault();return}e.dataTransfer.setData('text/plain',String(i));e.dataTransfer.effectAllowed='move'};
    b.ondragover=e=>{e.preventDefault()};
