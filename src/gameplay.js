@@ -71,6 +71,9 @@ export function mountGameplay(root,{onExit=()=>{}}={}){
  }
 let yaw=0,pitch=0;
  const keys=new Set();let last=performance.now();
+ const moveVelocity=new THREE.Vector2();
+ const forwardVector=new THREE.Vector3();
+ const rightVector=new THREE.Vector3();
  const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · ESC UNLOCK MOUSE</div><button type="button" class="sf-game-exit">RETURN TO LOBBY</button>';
  root.append(hud);
  const spawnStatus=hud.querySelector('.sf-spawn-status');
@@ -87,12 +90,15 @@ let yaw=0,pitch=0;
 
  const exit=()=>{dispose();onExit()};
  hud.querySelector('.sf-game-exit').addEventListener('click',exit);
- const keydown=e=>{if(['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)){keys.add(e.code);e.preventDefault()}};
+ const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+ const keydown=e=>{if(movementCodes.includes(e.code)){keys.add(e.code);e.preventDefault()}};
  const keyup=e=>keys.delete(e.code);
+ const resetInput=()=>{keys.clear();moveVelocity.set(0,0)};
+ const visibilityChange=()=>{if(document.hidden)resetInput()};
  const mouse=e=>{if(!locked)return;yaw-=e.movementX*.0024;pitch=THREE.MathUtils.clamp(pitch-e.movementY*.0024,-1.45,1.45)};
  const lock=()=>{renderer.domElement.requestPointerLock?.()};
  const lockchange=()=>{locked=document.pointerLockElement===renderer.domElement};
- window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);document.addEventListener('mousemove',mouse);document.addEventListener('pointerlockchange',lockchange);renderer.domElement.addEventListener('click',lock);
+ window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',resetInput);document.addEventListener('visibilitychange',visibilityChange);document.addEventListener('mousemove',mouse);document.addEventListener('pointerlockchange',lockchange);renderer.domElement.addEventListener('click',lock);
  function collides(x,z){return structures.some(b=>Math.abs(x-b.x)<b.w/2+.45&&Math.abs(z-b.z)<b.d/2+.45&&b.h>1)}
  function tick(now){
   if(!alive)return;frame=requestAnimationFrame(tick);
@@ -103,12 +109,22 @@ let yaw=0,pitch=0;
   if(phase==='bus'){bus.position.x=-60+Math.min(120,phaseClock*12);bus.position.y=22+Math.sin(phaseClock*.9)*1.2;bus.rotation.y=.1;if(phaseClock>11){phase='complete';bus.visible=false;spawnStatus.querySelector('strong').textContent='SPAWN ISLAND';countdownLabel.textContent='BATTLE ROYALE MAP COMING SOON'}}
   const width=root.clientWidth,height=root.clientHeight;
   if(width&&height){renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix()}
-  const forward=Number(keys.has('KeyW'))-Number(keys.has('KeyS')),side=Number(keys.has('KeyD'))-Number(keys.has('KeyA'));
-  const len=Math.hypot(forward,side)||1,speed=keys.has('ShiftLeft')?11:6;
-  const dx=(Math.sin(yaw)*forward+Math.cos(yaw)*side)/len*speed*dt;
-  const dz=(-Math.cos(yaw)*forward+Math.sin(yaw)*side)/len*speed*dt;
-  if(!collides(position.x+dx,position.z))position.x+=dx;
-  if(!collides(position.x,position.z+dz))position.z+=dz;
+  // Camera-relative movement: W goes where the camera faces, A goes left.
+  // Derive horizontal directions from the camera's yaw to avoid reversed strafing.
+  const forward=Number(keys.has('KeyW')||keys.has('ArrowUp'))-Number(keys.has('KeyS')||keys.has('ArrowDown'));
+  const strafe=Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft'));
+  const length=Math.hypot(forward,strafe);
+  const speed=keys.has('ShiftLeft')||keys.has('ShiftRight')?10.5:6.5;
+  forwardVector.set(-Math.sin(yaw),0,-Math.cos(yaw));
+  rightVector.set(Math.cos(yaw),0,-Math.sin(yaw));
+  const desiredX=length>0?(forwardVector.x*forward+rightVector.x*strafe)/length*speed:0;
+  const desiredZ=length>0?(forwardVector.z*forward+rightVector.z*strafe)/length*speed:0;
+  const smoothing=1-Math.exp(-(length>0?17:22)*dt);
+  moveVelocity.x=THREE.MathUtils.lerp(moveVelocity.x,desiredX,smoothing);
+  moveVelocity.y=THREE.MathUtils.lerp(moveVelocity.y,desiredZ,smoothing);
+  const dx=moveVelocity.x*dt,dz=moveVelocity.y*dt;
+  if(!collides(position.x+dx,position.z))position.x+=dx;else moveVelocity.x=0;
+  if(!collides(position.x,position.z+dz))position.z+=dz;else moveVelocity.y=0;
   const radius=Math.hypot(position.x,position.z);if(radius>68){position.x*=68/radius;position.z*=68/radius}
   gameHud.updatePosition();
   camera.position.copy(position);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
@@ -118,7 +134,7 @@ let yaw=0,pitch=0;
  function dispose(){
   if(!alive)return;alive=false;cancelAnimationFrame(frame);
   if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
-  window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
+  window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',resetInput);document.removeEventListener('visibilitychange',visibilityChange);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
   scene.traverse(o=>{if(o.isMesh){o.geometry?.dispose();if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material?.dispose()}});
   if(partyChannel)void supabase.removeChannel(partyChannel);
   disposeScenery();
