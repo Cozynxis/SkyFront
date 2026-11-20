@@ -29,10 +29,10 @@ export function buildSpawnScenery(scene){
  }
  const grass=mat('#fff',{map:pattern('#64a65d','#3f8646','grass',18)});
  const concrete=mat('#fff',{map:pattern('#9eabb0','#65717c','concrete',6)});
- const metal=mat('#fff',{map:pattern('#638cb0','#1a476d','metal',2),metalness:.28});
- const wood=mat('#95653f'),leaves=[mat('#3f995d'),mat('#58ad65'),mat('#317c53')],sand=mat('#d6bd87');
+
+
  const box=(x,y,z,w,h,d,m,rot=0)=>add(new THREE.BoxGeometry(w,h,d),m,x,y,z,rot);
- const cylinder=(x,y,z,r,h,m,segments=9)=>add(new THREE.CylinderGeometry(r,r,h,segments),m,x,y,z);
+
  const island=add(new THREE.CircleGeometry(71.5,80),grass,0,.065,0);island.rotation.x=-Math.PI/2;
  const runway=box(0,.085,-10,13,.09,63,concrete);
  for(let i=0;i<8;i++)box(0,.14,-35+i*7,.45,.015,3,mat('#f5e9bb'));
@@ -40,6 +40,9 @@ export function buildSpawnScenery(scene){
  const imported=[];
  let disposed=false;
  const loader=new GLTFLoader();
+ const baseUrl=new URL('../public/models/spawn-island/',import.meta.url);
+ const assets=import.meta.glob('../public/models/spawn-island/*.glb',{query:'?url',import:'default',eager:true});
+ const assetUrl=file=>assets['../public/models/spawn-island/'+file]||new URL(file,baseUrl).href;
  const models=[
   {file:'low-poly_tree.glb',count:24,min:31,max:60,scale:4.2},
   {file:'stylized_bush.glb',count:35,min:21,max:63,scale:2.1},
@@ -64,7 +67,7 @@ export function buildSpawnScenery(scene){
   return positions;
  };
  for(const def of models){
-  loader.load('/models/spawn-island/'+def.file,gltf=>{
+  loader.load(assetUrl(def.file),gltf=>{
    if(disposed){gltf.scene.traverse(o=>{if(o.isMesh)o.geometry?.dispose()});return}
    const source=gltf.scene;
    source.updateMatrixWorld(true);
@@ -86,32 +89,5 @@ export function buildSpawnScenery(scene){
    }
   },undefined,error=>{console.warn('Spawn Island model could not be loaded:',def.file,error)});
  }
- // Textured shipping containers, including ribs and corner locks.
- const containerColors=['#cf7850','#3b89b2','#d3b64f','#5a9b88'];
- for(let i=0;i<14;i++){
-  const x=(i%2===0?-1:1)*(22+(i%4)*7),z=-36+Math.floor(i/4)*9,m=mat(containerColors[i%4]);
-  box(x,1.4,z,6,2.8,2.8,m);
-  for(let j=0;j<10;j++)box(x-2.65+j*.58,1.4,z+1.43,.09,2.5,.06,metal);
-  for(const side of [-1,1])box(x+side*2.9,1.4,z+1.46,.14,2.7,.09,mat('#d2dce2'));
- }
- // Wooden picnic benches and crates around the social waiting area.
- for(let i=0;i<7;i++){
-  const x=-27+i*9,z=27+(i%2)*5;
-  box(x,.75,z,3,.18,1.2,wood);box(x-1,.36,z,.18,.7,1,metal);box(x+1,.36,z,.18,.7,1,metal);
- }
- for(let i=0;i<10;i++){
-  const x=-35+(i%5)*7,z=-2+Math.floor(i/5)*5;
-  box(x,.8,z,1.6,1.6,1.6,wood);
-  box(x,.8,z+.83,1.5,.1,.08,metal);
- }
- // Directional signs and tall lamps.
- for(const [x,z] of [[-12,14],[14,14],[-15,-25],[18,-29]]){
-  cylinder(x,2.4,z,.13,4.8,metal,8);
-  box(x,4.8,z,.95,.22,.65,mat('#ffda70',{emissive:'#ffcf68',emissiveIntensity:.7}));
- }
- const sign=box(-13,2.2,13,5,1.6,.22,mat('#254b80'));
- const label=document.createElement('canvas');label.width=512;label.height=128;const ctx=label.getContext('2d');ctx.fillStyle='#194f83';ctx.fillRect(0,0,512,128);ctx.fillStyle='#fff';ctx.font='bold 53px sans-serif';ctx.textAlign='center';ctx.fillText('SPAWN ISLAND',256,80);
- const signTexture=new THREE.CanvasTexture(label);signTexture.colorSpace=THREE.SRGBColorSpace;
- add(new THREE.PlaneGeometry(4.7,1.2),new THREE.MeshBasicMaterial({map:signTexture,side:THREE.DoubleSide}),-13,2.2,13.13);
- return ()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete,metal,wood,sand,...leaves]){m.map?.dispose();m.dispose()}signTexture.dispose()};
+ return ()=>{disposed=true;for(const model of imported)scene.remove(model);for(const mesh of owned){scene.remove(mesh);mesh.geometry.dispose()}for(const m of [grass,concrete]){m.map?.dispose();m.dispose()}};
 }
