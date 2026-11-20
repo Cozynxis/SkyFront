@@ -76,7 +76,7 @@ let yaw=0,pitch=0;
  const moveVelocity=new THREE.Vector2();
  const forwardVector=new THREE.Vector3();
  const rightVector=new THREE.Vector3();
- const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · ESC UNLOCK MOUSE</div><button type="button" class="sf-game-exit">RETURN TO LOBBY</button>';
+ const hud=document.createElement('div');hud.className='sf-game-hud';hud.innerHTML='<div class="sf-game-brand">SKYFRONT <span>SPAWN ISLAND · PRE-ALPHA</span></div><div class="sf-spawn-status"><strong>SPAWN ISLAND</strong><span>WAITING FOR PLAYERS</span><small>Multiplayer matchmaking coming later</small></div><div class="sf-game-crosshair">+</div><div class="sf-game-help">CLICK TO LOOK AROUND · WASD MOVE · SHIFT SPRINT · ESC MENU · I INVENTORY</div>';
  root.append(hud);
  const spawnStatus=hud.querySelector('.sf-spawn-status');
  spawnStatus.innerHTML='<strong>SPAWN ISLAND</strong><span class="sf-spawn-countdown">BATTLE BUS IN 25s</span><small class="sf-spawn-online">WAITING FOR PLAYERS</small>';
@@ -93,7 +93,8 @@ let yaw=0,pitch=0;
  const exit=()=>{dispose();onExit()};
  const leaveFromMenu=()=>exit();
  document.addEventListener('sf:leave-gameplay',leaveFromMenu);
- hud.querySelector('.sf-game-exit').addEventListener('click',exit);
+ const helpTip=hud.querySelector('.sf-game-help');
+ const helpFadeTimer=window.setTimeout(()=>{if(alive)helpTip.classList.add('is-fading')},5000);
  const movementCodes=['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
  const keydown=e=>{
   if(e.code==='Escape'){
@@ -150,7 +151,7 @@ let yaw=0,pitch=0;
  }
  frame=requestAnimationFrame(tick);
  function dispose(){
-  if(!alive)return;alive=false;cancelAnimationFrame(frame);
+  if(!alive)return;alive=false;cancelAnimationFrame(frame);window.clearTimeout(helpFadeTimer);
   document.removeEventListener('sf:leave-gameplay',leaveFromMenu);
   if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
   window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',resetInput);document.removeEventListener('visibilitychange',visibilityChange);document.removeEventListener('mousemove',mouse);document.removeEventListener('pointerlockchange',lockchange);renderer.domElement.removeEventListener('click',lock);
